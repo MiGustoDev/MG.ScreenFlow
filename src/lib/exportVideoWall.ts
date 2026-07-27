@@ -45,38 +45,73 @@ function computeRotatedDimensions(w: number, h: number, rotation: Rotation) {
     : { width: w, height: h };
 }
 
+/**
+ * Dibuja un frame del video wall.
+ *
+ * Lógica:
+ * 1. Se renderiza el video completo (con rotación y flip) en un canvas offscreen
+ *    del mismo tamaño que el canvas final.
+ * 2. Cada celda (col, row) del grid extrae el CROP que le corresponde
+ *    del canvas offscreen y lo dibuja en su posición en el canvas final.
+ *
+ * El resultado es el video PARTIDO en tiles, no replicado.
+ * Un pequeño gap negro entre celdas simula los marcos físicos de un video wall real.
+ */
 function drawWallFrame(
   ctx: CanvasRenderingContext2D,
   video: HTMLVideoElement,
   rotation: Rotation,
   flip: FlipState | undefined,
-  cellW: number,
-  cellH: number,
+  canvasW: number,
+  canvasH: number,
   cols: number,
   rows: number,
 ) {
+  // ── 1. Renderizar el video completo a un canvas offscreen ──────────────────
+  const offscreen = document.createElement('canvas');
+  offscreen.width = canvasW;
+  offscreen.height = canvasH;
+  const offCtx = offscreen.getContext('2d');
+  if (!offCtx) return;
+
+  offCtx.fillStyle = '#000';
+  offCtx.fillRect(0, 0, canvasW, canvasH);
+  offCtx.save();
+  offCtx.translate(canvasW / 2, canvasH / 2);
+  offCtx.rotate((rotation * Math.PI) / 180);
+  if (flip) {
+    offCtx.scale(flip.horizontal ? -1 : 1, flip.vertical ? -1 : 1);
+  }
+  // Dibujar el video escalado al tamaño total del canvas
+  offCtx.drawImage(video, -canvasW / 2, -canvasH / 2, canvasW, canvasH);
+  offCtx.restore();
+
+  // ── 2. Copiar cada tile al canvas final ────────────────────────────────────
+  // Gap en píxeles entre celdas para simular los marcos físicos del video wall
+  const GAP = Math.max(2, Math.round(Math.min(canvasW, canvasH) * 0.004));
+  const totalGapX = GAP * (cols - 1);
+  const totalGapY = GAP * (rows - 1);
+  const cellW = (canvasW - totalGapX) / cols;
+  const cellH = (canvasH - totalGapY) / rows;
+
+  // Fondo negro (gaps quedan en negro)
   ctx.fillStyle = '#000';
-  ctx.fillRect(0, 0, cellW * cols, cellH * rows);
+  ctx.fillRect(0, 0, canvasW, canvasH);
 
   for (let row = 0; row < rows; row++) {
     for (let col = 0; col < cols; col++) {
-      const offsetX = col * cellW;
-      const offsetY = row * cellH;
+      // Posición destino en el canvas final
+      const destX = col * (cellW + GAP);
+      const destY = row * (cellH + GAP);
 
-      ctx.save();
-      // Clip to cell
-      ctx.beginPath();
-      ctx.rect(offsetX, offsetY, cellW, cellH);
-      ctx.clip();
+      // Posición fuente en el offscreen: cada celda extrae su porción proporcional
+      // (sin gap — el offscreen tiene el video continuo sin gaps)
+      const srcX = col * (canvasW / cols);
+      const srcY = row * (canvasH / rows);
+      const srcW = canvasW / cols;
+      const srcH = canvasH / rows;
 
-      // Transform to center of cell
-      ctx.translate(offsetX + cellW / 2, offsetY + cellH / 2);
-      ctx.rotate((rotation * Math.PI) / 180);
-      if (flip) {
-        ctx.scale(flip.horizontal ? -1 : 1, flip.vertical ? -1 : 1);
-      }
-      ctx.drawImage(video, -video.videoWidth / 2, -video.videoHeight / 2);
-      ctx.restore();
+      ctx.drawImage(offscreen, srcX, srcY, srcW, srcH, destX, destY, cellW, cellH);
     }
   }
 }
@@ -115,18 +150,13 @@ export async function exportVideoWall(opts: ExportVideoWallOptions): Promise<Exp
 
   onProgress?.({ phase: 'preparing', fraction: 0 });
 
-  const { width: srcW, height: srcH } = computeRotatedDimensions(
+  // El canvas de salida tiene las mismas dimensiones que el video (con rotación aplicada)
+  const { width: canvasW, height: canvasH } = computeRotatedDimensions(
     source.videoWidth,
     source.videoHeight,
     rotation,
   );
-  if (srcW === 0 || srcH === 0) throw new Error('El video no tiene dimensiones válidas.');
-
-  // Each cell keeps the original (rotated) dimensions
-  const cellW = srcW;
-  const cellH = srcH;
-  const canvasW = cellW * cols;
-  const canvasH = cellH * rows;
+  if (canvasW === 0 || canvasH === 0) throw new Error('El video no tiene dimensiones válidas.');
 
   const canvas = document.createElement('canvas');
   canvas.width = canvasW;
@@ -137,7 +167,7 @@ export async function exportVideoWall(opts: ExportVideoWallOptions): Promise<Exp
   const fps = getSourceVideoFps(source);
   const stream = canvas.captureStream(fps);
 
-  // Add audio tracks
+  // Agregar audio
   const audioStreams = captureVideoStream(source);
   for (const s of audioStreams) {
     for (const t of s.getAudioTracks()) stream.addTrack(t);
@@ -217,7 +247,7 @@ export async function exportVideoWall(opts: ExportVideoWallOptions): Promise<Exp
       if (aborted || resolved) return;
       const elapsed = (performance.now() - startTimeMs) / 1000;
 
-      drawWallFrame(ctx, source, rotation, flip, cellW, cellH, cols, rows);
+      drawWallFrame(ctx, source, rotation, flip, canvasW, canvasH, cols, rows);
 
       const fraction = Math.min(1, Math.max(0, elapsed / effectiveDuration));
       onProgress?.({ phase: 'rendering', fraction });
