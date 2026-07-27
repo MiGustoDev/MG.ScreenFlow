@@ -1,4 +1,5 @@
-import { Scissors, Sparkles, X, Loader2, Undo2, Redo2 } from 'lucide-react';
+import React from 'react';
+import { Scissors, Sparkles, X, Loader2, Undo2, Redo2, Pencil, Check } from 'lucide-react';
 import { useVideoEditor } from '@/hooks/useVideoEditor';
 import { Dropzone } from '@/components/Dropzone';
 import { VideoStage } from '@/components/VideoStage';
@@ -48,7 +49,30 @@ function App() {
     exportCurrent,
     cancelExport,
     clearExport,
+    renameFile,
   } = editor;
+
+  // Inline filename editing state
+  const [isEditingName, setIsEditingName] = React.useState(false);
+  const [draftName, setDraftName] = React.useState('');
+  const nameInputRef = React.useRef<HTMLInputElement>(null);
+
+  const startEditingName = () => {
+    if (!meta) return;
+    setDraftName(meta.name);
+    setIsEditingName(true);
+    // Focus after render
+    setTimeout(() => nameInputRef.current?.select(), 0);
+  };
+
+  const commitEditingName = () => {
+    renameFile(draftName);
+    setIsEditingName(false);
+  };
+
+  const cancelEditingName = () => {
+    setIsEditingName(false);
+  };
 
   const showEditor = status === 'ready' || status === 'exporting' || status === 'exported';
 
@@ -204,10 +228,43 @@ function App() {
               <div className="rounded-2xl border border-slate-800 bg-slate-900 p-4 shadow-sm sm:p-5">
                 <h3 className="mb-3 text-sm font-semibold text-slate-200">Detalles</h3>
                 <dl className="space-y-2 text-sm">
-                  <div className="flex justify-between">
-                    <dt className="text-slate-400">Archivo</dt>
-                    <dd className="max-w-[60%] truncate font-medium text-slate-200" title={meta.name}>
-                      {meta.name}
+                  <div className="group flex justify-between gap-2">
+                    <dt className="shrink-0 text-slate-400">Archivo</dt>
+                    <dd className="flex min-w-0 items-center gap-1.5 font-medium text-slate-200">
+                      {isEditingName ? (
+                        <>
+                          <input
+                            ref={nameInputRef}
+                            autoFocus
+                            type="text"
+                            value={draftName}
+                            onChange={(e) => setDraftName(e.target.value)}
+                            onKeyDown={(e) => {
+                              if (e.key === 'Enter') commitEditingName();
+                              if (e.key === 'Escape') cancelEditingName();
+                            }}
+                            className="w-full min-w-0 truncate rounded-md border border-sky-500 bg-slate-800 px-2 py-0.5 text-sm text-slate-100 outline-none ring-1 ring-sky-500/60 focus:ring-sky-400"
+                          />
+                          <button
+                            onClick={commitEditingName}
+                            title="Confirmar nombre"
+                            className="shrink-0 rounded p-0.5 text-sky-400 transition hover:bg-sky-500/20"
+                          >
+                            <Check size={14} />
+                          </button>
+                        </>
+                      ) : (
+                        <>
+                          <span className="truncate" title={meta.name}>{meta.name}</span>
+                          <button
+                            onClick={startEditingName}
+                            title="Renombrar archivo"
+                            className="shrink-0 rounded p-0.5 text-slate-500 opacity-0 transition hover:bg-slate-700 hover:text-slate-300 group-hover:opacity-100"
+                          >
+                            <Pencil size={12} />
+                          </button>
+                        </>
+                      )}
                     </dd>
                   </div>
                   <div className="flex justify-between">

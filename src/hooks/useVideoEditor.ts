@@ -55,6 +55,7 @@ export interface UseVideoEditor {
   exportCurrent: () => Promise<void>;
   cancelExport: () => void;
   clearExport: () => void;
+  renameFile: (name: string) => void;
 }
 
 export function useVideoEditor(): UseVideoEditor {
@@ -449,6 +450,12 @@ export function useVideoEditor(): UseVideoEditor {
     if (status === 'exported' || status === 'error') setStatus('ready');
   }, [exportUrl, status, cleanupUrl]);
 
+  const renameFile = useCallback((name: string) => {
+    const trimmed = name.trim();
+    if (!trimmed || !meta) return;
+    setMeta((prev) => prev ? { ...prev, name: trimmed } : prev);
+  }, [meta]);
+
   useEffect(() => {
     const video = videoRef.current;
     if (!video) return;
@@ -524,6 +531,7 @@ export function useVideoEditor(): UseVideoEditor {
     exportCurrent,
     cancelExport,
     clearExport,
+    renameFile,
   };
 }
 
