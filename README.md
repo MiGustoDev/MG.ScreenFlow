@@ -22,20 +22,28 @@
 
 Disfruta de una experiencia de edición fluida e interactiva a través de una interfaz de usuario minimalista y optimizada para el rendimiento:
 
-### 📥 1. Pantalla de Carga
-Sube cualquier clip arrastrándolo a la interfaz intuitiva. Clipper procesa el formato nativamente en segundos.
+<table width="100%">
+  <tr>
+    <td width="50%" align="center" valign="top">
+      <img src="./screenshots/1-landing.png" alt="Pantalla de Inicio" style="border-radius: 8px; border: 1px solid #334155;" />
+      <br /><br />
+      <strong>Pantalla de Inicio</strong> — interfaz limpia y zona de dropzone para arrastrar videos
+    </td>
+    <td width="50%" align="center" valign="top">
+      <img src="./screenshots/2-upload.png" alt="Carga de Archivos" style="border-radius: 8px; border: 1px solid #334155;" />
+      <br /><br />
+      <strong>Carga de Archivos</strong> — selector local para cargar de manera segura y privada
+    </td>
+  </tr>
+</table>
 
-![Pantalla de Carga](./screenshots/1-landing.png)
+<br />
 
-### 📂 2. Carga Local Rápida
-Compatible con MP4, WebM, MOV y otros contenedores comunes mediante la API de archivo local.
-
-![Selección de Archivos](./screenshots/2-upload.png)
-
-### ✂️ 3. Panel de Control y Edición
-Línea de tiempo interactiva enriquecida con tira de imágenes, tooltip dinámico de posición y selector de cuadrícula de Video Wall integrada.
-
-![Espacio de Trabajo del Editor](./screenshots/3-editor.png)
+<p align="center">
+  <img src="./screenshots/3-editor.png" alt="Espacio de Trabajo del Editor" width="90%" style="border-radius: 8px; border: 1px solid #334155;" />
+  <br /><br />
+  <strong>Espacio de Trabajo</strong> — timeline de miniaturas continuo y paneles de control posicionados
+</p>
 
 ---
 
