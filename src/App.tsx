@@ -53,6 +53,7 @@ function App() {
     renameFile,
     wallLayout,
     setWallLayout,
+    thumbnails,
   } = editor;
 
   // Inline filename editing state
@@ -189,6 +190,7 @@ function App() {
                   isMuted={isMuted}
                   onVolumeChange={setVolume}
                   onToggleMute={toggleMute}
+                  thumbnails={thumbnails}
                 />
               </div>
 

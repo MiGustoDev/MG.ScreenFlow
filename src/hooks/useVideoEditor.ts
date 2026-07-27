@@ -13,6 +13,7 @@ import type {
 import { clamp } from '@/lib/format';
 import { exportVideo } from '@/lib/exportVideo';
 import { exportVideoWall } from '@/lib/exportVideoWall';
+import { generateThumbnails } from '@/lib/generateThumbnails';
 
 const MIN_TRIM_SECONDS = 0.1;
 
@@ -60,6 +61,7 @@ export interface UseVideoEditor {
   cancelExport: () => void;
   clearExport: () => void;
   renameFile: (name: string) => void;
+  thumbnails: string[];
 }
 
 export function useVideoEditor(): UseVideoEditor {
@@ -80,6 +82,9 @@ export function useVideoEditor(): UseVideoEditor {
 
   // Video Wall
   const [wallLayout, setWallLayout] = useState<VideoWallLayout | null>(null);
+
+  // Thumbnails
+  const [thumbnails, setThumbnails] = useState<string[]>([]);
   
   // Feature states
   const [volume, setVolumeState] = useState<number>(1);
@@ -138,6 +143,7 @@ export function useVideoEditor(): UseVideoEditor {
       setIsMutedState(false);
       setPast([]);
       setFuture([]);
+      setThumbnails([]);
 
       const url = URL.createObjectURL(file);
       pendingFileRef.current = { file, url };
@@ -165,6 +171,9 @@ export function useVideoEditor(): UseVideoEditor {
       setTrimState({ start: 0, end: duration });
       setStatus('ready');
       pendingFileRef.current = null;
+
+      // Generar thumbnails de manera asíncrona
+      generateThumbnails(objectUrl, duration, 12).then(setThumbnails);
       
       // Sync properties
       video.volume = volume;
@@ -261,6 +270,7 @@ export function useVideoEditor(): UseVideoEditor {
     setIsMutedState(false);
     setPast([]);
     setFuture([]);
+    setThumbnails([]);
   }, [objectUrl, exportUrl, cleanupUrl]);
 
   const rotate = useCallback((delta: 90 | 180 | 270) => {
@@ -558,6 +568,7 @@ export function useVideoEditor(): UseVideoEditor {
     cancelExport,
     clearExport,
     renameFile,
+    thumbnails,
   };
 }
 

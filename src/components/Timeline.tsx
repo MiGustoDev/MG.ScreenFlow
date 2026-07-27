@@ -10,6 +10,7 @@ interface TimelineProps {
   isPlaying: boolean;
   volume: number;
   isMuted: boolean;
+  thumbnails?: string[];
   onTrimChange: (trim: TrimRange) => void;
   onTrimCommit: () => void;
   onSeek: (time: number) => void;
@@ -27,6 +28,7 @@ export function Timeline({
   isPlaying,
   volume,
   isMuted,
+  thumbnails = [],
   onTrimChange,
   onTrimCommit,
   onSeek,
@@ -36,6 +38,10 @@ export function Timeline({
 }: TimelineProps) {
   const trackRef = useRef<HTMLDivElement>(null);
   const [drag, setDrag] = useState<DragMode>(null);
+
+  // Hover preview state
+  const [hoverTime, setHoverTime] = useState<number | null>(null);
+  const [hoverX, setHoverX] = useState(0);
 
   const pct = (t: number) => `${(t / (duration || 1)) * 100}%`;
 
@@ -83,9 +89,34 @@ export function Timeline({
     setDrag('playhead');
   };
 
+  const handleTrackMouseMove = (e: React.MouseEvent) => {
+    const track = trackRef.current;
+    if (!track) return;
+    const rect = track.getBoundingClientRect();
+    const t = timeFromClientX(e.clientX);
+    const relativeX = e.clientX - rect.left;
+    setHoverTime(t);
+    setHoverX(relativeX);
+  };
+
+  const handleTrackMouseLeave = () => {
+    setHoverTime(null);
+  };
+
+  // Get thumbnail closest to the given time
+  const getThumbnailForTime = (t: number): string | null => {
+    if (!thumbnails.length) return null;
+    const idx = Math.round((t / (duration || 1)) * (thumbnails.length - 1));
+    return thumbnails[clamp(idx, 0, thumbnails.length - 1)] ?? null;
+  };
+
   const startPct = pct(trim.start);
   const endPct = pct(trim.end);
   const playPct = pct(currentTime);
+
+  // Hover tooltip dimensions
+  const TOOLTIP_W = 120;
+  const TOOLTIP_H = 68;
 
   return (
     <div className="flex flex-col gap-3">
@@ -157,45 +188,125 @@ export function Timeline({
         </div>
       </div>
 
-      <div
-        ref={trackRef}
-        onPointerDown={handleTrackPointerDown}
-        className="relative h-14 w-full cursor-pointer touch-none select-none rounded-lg bg-slate-800"
-      >
-        {/* selected region */}
+      {/* Track */}
+      <div className="relative">
         <div
-          className="absolute inset-y-0 rounded-lg bg-sky-500/25 ring-2 ring-sky-500/70"
-          style={{ left: startPct, right: `calc(100% - ${endPct})` }}
+          ref={trackRef}
+          onPointerDown={handleTrackPointerDown}
+          onMouseMove={handleTrackMouseMove}
+          onMouseLeave={handleTrackMouseLeave}
+          className="relative h-16 w-full cursor-pointer touch-none select-none overflow-hidden rounded-lg bg-slate-800"
         >
-          {/* start handle */}
+          {/* Thumbnail strip */}
+          {thumbnails.length > 0 && (
+            <div className="absolute inset-0 flex opacity-60">
+              {thumbnails.map((src, i) => (
+                <img
+                  key={i}
+                  src={src}
+                  alt=""
+                  draggable={false}
+                  className="h-full shrink-0 object-cover"
+                  style={{ width: `${100 / thumbnails.length}%` }}
+                />
+              ))}
+            </div>
+          )}
+
+          {/* Darkened overlay outside trim region */}
           <div
-            onPointerDown={(e) => {
-              e.stopPropagation();
-              setDrag('start');
-            }}
-            className="absolute left-0 top-0 flex h-full w-3 -translate-x-1/2 cursor-ew-resize touch-none items-center justify-center rounded-l-lg bg-sky-500 text-white shadow-sm"
-          >
-            <GripHorizontal size={12} className="rotate-90 opacity-80" />
-          </div>
-          {/* end handle */}
+            className="pointer-events-none absolute inset-y-0 left-0 bg-slate-950/60"
+            style={{ width: startPct }}
+          />
           <div
-            onPointerDown={(e) => {
-              e.stopPropagation();
-              setDrag('end');
-            }}
-            className="absolute right-0 top-0 flex h-full w-3 translate-x-1/2 cursor-ew-resize touch-none items-center justify-center rounded-r-lg bg-sky-500 text-white shadow-sm"
+            className="pointer-events-none absolute inset-y-0 right-0 bg-slate-950/60"
+            style={{ width: `calc(100% - ${endPct})` }}
+          />
+
+          {/* Selected region with handles nested inside */}
+          <div
+            className="absolute inset-y-0 rounded-lg ring-2 ring-sky-500/80"
+            style={{ left: startPct, right: `calc(100% - ${endPct})` }}
           >
-            <GripHorizontal size={12} className="rotate-90 opacity-80" />
+            {/* Start handle */}
+            <div
+              onPointerDown={(e) => {
+                e.stopPropagation();
+                setDrag('start');
+              }}
+              className="absolute left-0 top-0 flex h-full w-3 -translate-x-1/2 cursor-ew-resize touch-none items-center justify-center rounded-l-lg bg-sky-500 text-white shadow-sm"
+            >
+              <GripHorizontal size={12} className="rotate-90 opacity-80" />
+            </div>
+
+            {/* End handle */}
+            <div
+              onPointerDown={(e) => {
+                e.stopPropagation();
+                setDrag('end');
+              }}
+              className="absolute right-0 top-0 flex h-full w-3 translate-x-1/2 cursor-ew-resize touch-none items-center justify-center rounded-r-lg bg-sky-500 text-white shadow-sm"
+            >
+              <GripHorizontal size={12} className="rotate-90 opacity-80" />
+            </div>
           </div>
+
+          {/* Playhead */}
+          <div
+            className="pointer-events-none absolute top-0 z-10 h-full w-0.5 -translate-x-1/2 bg-rose-500 shadow-[0_0_6px_1px_rgb(244_63_94_/_0.6)]"
+            style={{ left: playPct }}
+          >
+            <div className="absolute -top-0.5 left-1/2 h-2.5 w-2.5 -translate-x-1/2 rotate-45 rounded-sm bg-rose-500" />
+          </div>
+
+          {/* Hover line */}
+          {hoverTime !== null && !drag && (
+            <div
+              className="pointer-events-none absolute top-0 z-20 h-full w-px -translate-x-1/2 bg-white/40"
+              style={{ left: hoverX }}
+            />
+          )}
         </div>
 
-        {/* playhead */}
-        <div
-          className="pointer-events-none absolute top-0 z-10 h-full w-0.5 -translate-x-1/2 bg-rose-500"
-          style={{ left: playPct }}
-        >
-          <div className="absolute -top-1 left-1/2 h-2.5 w-2.5 -translate-x-1/2 rotate-45 rounded-sm bg-rose-500" />
-        </div>
+        {/* Hover preview tooltip — rendered outside the clipping overflow:hidden container */}
+        {hoverTime !== null && !drag && (() => {
+          const thumb = getThumbnailForTime(hoverTime);
+          const track = trackRef.current;
+          const trackW = track?.offsetWidth ?? 1;
+          // Clamp tooltip position so it stays inside the track
+          const tooltipLeft = clamp(hoverX - TOOLTIP_W / 2, 0, trackW - TOOLTIP_W);
+
+          return (
+            <div
+              className="pointer-events-none absolute z-30 overflow-hidden rounded-lg border border-slate-600/80 bg-slate-900 shadow-xl shadow-black/50"
+              style={{
+                bottom: '100%',
+                left: tooltipLeft,
+                width: TOOLTIP_W,
+                marginBottom: 8,
+              }}
+            >
+              {thumb ? (
+                <img
+                  src={thumb}
+                  alt={formatTimePrecise(hoverTime)}
+                  className="block w-full object-cover"
+                  style={{ height: TOOLTIP_H }}
+                />
+              ) : (
+                <div
+                  className="flex items-center justify-center bg-slate-800 text-xs text-slate-400"
+                  style={{ height: TOOLTIP_H }}
+                >
+                  {formatTimePrecise(hoverTime)}
+                </div>
+              )}
+              <div className="bg-slate-900 px-2 py-1 text-center text-[10px] font-medium text-slate-300">
+                {formatTimePrecise(hoverTime)}
+              </div>
+            </div>
+          );
+        })()}
       </div>
 
       <div className="flex justify-between text-[10px] text-slate-500">
@@ -206,4 +317,3 @@ export function Timeline({
     </div>
   );
 }
-
