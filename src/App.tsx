@@ -191,47 +191,6 @@ function App() {
                   onToggleMute={toggleMute}
                 />
               </div>
-            </div>
-
-            {/* Controls */}
-            <div className="flex flex-col gap-5">
-              <div className="rounded-2xl border border-slate-800 bg-slate-900 p-4 shadow-sm sm:p-5">
-                <RotationControls
-                  rotation={rotation}
-                  flip={flip}
-                  originalWidth={meta.width}
-                  originalHeight={meta.height}
-                  onRotate={rotate}
-                  onFlipHorizontal={toggleFlipHorizontal}
-                  onFlipVertical={toggleFlipVertical}
-                  onReset={resetRotation}
-                />
-              </div>
-
-              {/* Speed control */}
-              <div className="rounded-2xl border border-slate-800 bg-slate-900 p-4 shadow-sm sm:p-5">
-                <h3 className="mb-3 text-sm font-semibold text-slate-200">Velocidad de Reproducción</h3>
-                <div className="grid grid-cols-5 gap-1.5">
-                  {[0.25, 0.5, 1, 1.5, 2].map((speed) => (
-                    <button
-                      key={speed}
-                      onClick={() => setPlaybackSpeed(speed)}
-                      className={`rounded-lg py-1.5 text-xs font-semibold transition active:scale-95 ${
-                        playbackSpeed === speed
-                          ? 'bg-sky-500 text-white'
-                          : 'border border-slate-700 bg-slate-800/60 text-slate-300 hover:bg-slate-800 hover:text-slate-200'
-                      }`}
-                    >
-                      {speed}x
-                    </button>
-                  ))}
-                </div>
-              </div>
-
-              <VideoWallPicker
-                value={wallLayout}
-                onChange={setWallLayout}
-              />
 
               <div className="rounded-2xl border border-slate-800 bg-slate-900 p-4 shadow-sm sm:p-5">
                 <h3 className="mb-3 text-sm font-semibold text-slate-200">Detalles</h3>
@@ -293,6 +252,47 @@ function App() {
                   </div>
                 </dl>
               </div>
+            </div>
+
+            {/* Controls */}
+            <div className="flex flex-col gap-5">
+              <div className="rounded-2xl border border-slate-800 bg-slate-900 p-4 shadow-sm sm:p-5">
+                <RotationControls
+                  rotation={rotation}
+                  flip={flip}
+                  originalWidth={meta.width}
+                  originalHeight={meta.height}
+                  onRotate={rotate}
+                  onFlipHorizontal={toggleFlipHorizontal}
+                  onFlipVertical={toggleFlipVertical}
+                  onReset={resetRotation}
+                />
+              </div>
+
+              {/* Speed control */}
+              <div className="rounded-2xl border border-slate-800 bg-slate-900 p-4 shadow-sm sm:p-5">
+                <h3 className="mb-3 text-sm font-semibold text-slate-200">Velocidad de Reproducción</h3>
+                <div className="grid grid-cols-5 gap-1.5">
+                  {[0.25, 0.5, 1, 1.5, 2].map((speed) => (
+                    <button
+                      key={speed}
+                      onClick={() => setPlaybackSpeed(speed)}
+                      className={`rounded-lg py-1.5 text-xs font-semibold transition active:scale-95 ${
+                        playbackSpeed === speed
+                          ? 'bg-sky-500 text-white'
+                          : 'border border-slate-700 bg-slate-800/60 text-slate-300 hover:bg-slate-800 hover:text-slate-200'
+                      }`}
+                    >
+                      {speed}x
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              <VideoWallPicker
+                value={wallLayout}
+                onChange={setWallLayout}
+              />
 
               <div className="rounded-2xl border border-slate-800 bg-slate-900 p-4 shadow-sm sm:p-5">
                 <ExportBar
