@@ -34,6 +34,12 @@ export interface TrimRange {
 
 export type ExportFormat = 'mp4' | 'webm';
 
+export interface VideoWallLayout {
+  cols: number;
+  rows: number;
+  label: string;
+}
+
 export const MP4_CANDIDATES = [
   'video/mp4;codecs=avc1.42E01E,mp4a.40.2',
   'video/mp4',

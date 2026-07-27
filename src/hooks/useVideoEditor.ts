@@ -8,9 +8,11 @@ import type {
   TrimRange,
   VideoMeta,
   EditorHistoryEntry,
+  VideoWallLayout,
 } from '@/types';
 import { clamp } from '@/lib/format';
 import { exportVideo } from '@/lib/exportVideo';
+import { exportVideoWall } from '@/lib/exportVideoWall';
 
 const MIN_TRIM_SECONDS = 0.1;
 
@@ -34,6 +36,7 @@ export interface UseVideoEditor {
   playbackSpeed: number;
   canUndo: boolean;
   canRedo: boolean;
+  wallLayout: VideoWallLayout | null;
   loadFile: (file: File) => void;
   reset: () => void;
   rotate: (delta: 90 | 180 | 270) => void;
@@ -43,6 +46,7 @@ export interface UseVideoEditor {
   setTrim: (trim: TrimRange) => void;
   commitTrim: () => void;
   setExportFormat: (format: ExportFormat) => void;
+  setWallLayout: (layout: VideoWallLayout | null) => void;
   play: () => void;
   pause: () => void;
   togglePlay: () => void;
@@ -73,6 +77,9 @@ export function useVideoEditor(): UseVideoEditor {
   const [exportProgress, setExportProgress] = useState<ExportProgress | null>(null);
   const [exportUrl, setExportUrl] = useState<string | null>(null);
   const [exportName, setExportName] = useState<string | null>(null);
+
+  // Video Wall
+  const [wallLayout, setWallLayout] = useState<VideoWallLayout | null>(null);
   
   // Feature states
   const [volume, setVolumeState] = useState<number>(1);
@@ -412,18 +419,35 @@ export function useVideoEditor(): UseVideoEditor {
     abortRef.current = controller;
 
     try {
-      const result = await exportVideo({
-        source: video,
-        trim,
-        rotation,
-        flip,
-        format: exportFormat,
-        signal: controller.signal,
-        onProgress: setExportProgress,
-      });
-      setExportUrl(result.url);
       const base = meta.name.replace(/\.[^.]+$/, '');
-      setExportName(`${base}_editado.${result.extension}`);
+      let result;
+
+      if (wallLayout) {
+        result = await exportVideoWall({
+          source: video,
+          trim,
+          rotation,
+          flip,
+          format: exportFormat,
+          layout: wallLayout,
+          signal: controller.signal,
+          onProgress: setExportProgress,
+        });
+        setExportName(`${base}_wall${wallLayout.cols}x${wallLayout.rows}.${result.extension}`);
+      } else {
+        result = await exportVideo({
+          source: video,
+          trim,
+          rotation,
+          flip,
+          format: exportFormat,
+          signal: controller.signal,
+          onProgress: setExportProgress,
+        });
+        setExportName(`${base}_editado.${result.extension}`);
+      }
+
+      setExportUrl(result.url);
       setStatus('exported');
     } catch (e) {
       if ((e as DOMException)?.name === 'AbortError') {
@@ -436,7 +460,7 @@ export function useVideoEditor(): UseVideoEditor {
     } finally {
       abortRef.current = null;
     }
-  }, [objectUrl, meta, status, trim, rotation, flip, exportFormat, exportUrl, cleanupUrl]);
+  }, [objectUrl, meta, status, trim, rotation, flip, exportFormat, exportUrl, wallLayout, cleanupUrl]);
 
   const cancelExport = useCallback(() => {
     abortRef.current?.abort();
@@ -510,6 +534,7 @@ export function useVideoEditor(): UseVideoEditor {
     playbackSpeed,
     canUndo: past.length > 0,
     canRedo: future.length > 0,
+    wallLayout,
     loadFile,
     reset,
     rotate,
@@ -519,6 +544,7 @@ export function useVideoEditor(): UseVideoEditor {
     setTrim,
     commitTrim,
     setExportFormat,
+    setWallLayout,
     play,
     pause,
     togglePlay,

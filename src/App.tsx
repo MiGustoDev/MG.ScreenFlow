@@ -6,6 +6,7 @@ import { VideoStage } from '@/components/VideoStage';
 import { RotationControls } from '@/components/RotationControls';
 import { Timeline } from '@/components/Timeline';
 import { ExportBar } from '@/components/ExportBar';
+import { VideoWallPicker } from '@/components/VideoWallPicker';
 import { formatBytes, formatTimePrecise } from '@/lib/format';
 
 function App() {
@@ -50,6 +51,8 @@ function App() {
     cancelExport,
     clearExport,
     renameFile,
+    wallLayout,
+    setWallLayout,
   } = editor;
 
   // Inline filename editing state
@@ -224,6 +227,11 @@ function App() {
                   ))}
                 </div>
               </div>
+
+              <VideoWallPicker
+                value={wallLayout}
+                onChange={setWallLayout}
+              />
 
               <div className="rounded-2xl border border-slate-800 bg-slate-900 p-4 shadow-sm sm:p-5">
                 <h3 className="mb-3 text-sm font-semibold text-slate-200">Detalles</h3>
