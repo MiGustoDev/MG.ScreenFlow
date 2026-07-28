@@ -85,15 +85,15 @@ function App() {
       <header className="sticky top-0 z-20 border-b border-slate-800/70 bg-slate-950/80 backdrop-blur-md">
         <div className="mx-auto flex max-w-6xl items-center justify-between px-4 py-3 sm:px-6">
           <div className="flex items-center gap-2.5">
-            <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-sky-500 text-white">
-              <Scissors size={18} />
+            <div className="flex h-10 w-10 items-center justify-center overflow-hidden rounded-xl bg-slate-900/90 border border-slate-800 p-1 shadow-sm">
+              <img src="/Logo Mi Gusto 2025.png" alt="ScreenFlow Logo" className="h-full w-full object-contain" />
             </div>
             <div className="leading-tight">
               <h1 className="text-sm font-bold tracking-tight text-white sm:text-base">
-                Clipper
+                ScreenFlow
               </h1>
               <p className="hidden text-xs text-slate-400 sm:block">
-                Editor de video en el navegador
+                Editor de video para pantallas de la marca
               </p>
             </div>
           </div>
@@ -316,7 +316,7 @@ function App() {
       </main>
 
       <footer className="mx-auto max-w-6xl px-4 pb-8 pt-2 text-center text-xs text-slate-600 sm:px-6">
-        Clipper — el video se procesa localmente en tu navegador.
+        ScreenFlow — el video se procesa localmente en tu navegador.
       </footer>
     </div>
   );

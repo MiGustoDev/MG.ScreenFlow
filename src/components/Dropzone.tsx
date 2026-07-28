@@ -46,7 +46,7 @@ export function Dropzone({ onFile, disabled }: DropzoneProps) {
       <input
         ref={inputRef}
         type="file"
-        accept="video/*"
+        accept="video/*,image/*"
         className="hidden"
         onChange={(e) => handleFiles(e.target.files)}
       />
@@ -59,7 +59,7 @@ export function Dropzone({ onFile, disabled }: DropzoneProps) {
       </div>
       <div className="space-y-1.5">
         <p className="text-base font-semibold text-slate-100 sm:text-lg">
-          {dragging ? 'Soltá el video acá' : 'Arrastrá tu video'}
+          {dragging ? 'Soltá tu archivo acá' : 'Arrastrá tu video'}
         </p>
         <p className="text-sm text-slate-400">
           o <span className="font-medium text-sky-400">hacé clic para seleccionar</span> un archivo

@@ -122,8 +122,8 @@ export function useVideoEditor(): UseVideoEditor {
 
   const loadFile = useCallback(
     (file: File) => {
-      if (!file.type.startsWith('video/')) {
-        setError('El archivo no es un video válido.');
+      if (!file.type.startsWith('video/') && !file.type.startsWith('image/')) {
+        setError('El archivo no es un video o imagen válido.');
         setStatus('error');
         return;
       }
