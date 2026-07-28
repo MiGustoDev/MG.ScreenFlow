@@ -1,6 +1,9 @@
 import { MP4_CANDIDATES, WEBM_CANDIDATES, type ExportFormat } from '@/types';
 
 export function pickSupportedMimeType(format: ExportFormat): string {
+  if (format === 'png') return 'image/png';
+  if (format === 'jpg') return 'image/jpeg';
+
   if (typeof MediaRecorder === 'undefined') {
     return format === 'mp4' ? 'video/mp4' : 'video/webm';
   }
@@ -20,12 +23,15 @@ export function pickSupportedMimeType(format: ExportFormat): string {
 }
 
 export function isFormatSupported(format: ExportFormat): boolean {
+  if (format === 'png' || format === 'jpg') return true;
   if (typeof MediaRecorder === 'undefined') return true;
   const candidates = format === 'mp4' ? MP4_CANDIDATES : WEBM_CANDIDATES;
   return candidates.some((c) => MediaRecorder.isTypeSupported(c));
 }
 
 export function mimeToExtension(mime: string): string {
+  if (mime.includes('png')) return 'png';
+  if (mime.includes('jpeg') || mime.includes('jpg')) return 'jpg';
   if (mime.includes('mp4')) return 'mp4';
   if (mime.includes('webm')) return 'webm';
   return 'mp4';

@@ -1,4 +1,4 @@
-import type { ExportFormat, ExportProgress, FlipState, Rotation, TrimRange } from '@/types';
+import type { VideoExportFormat, ExportProgress, FlipState, Rotation, TrimRange } from '@/types';
 import { pickSupportedMimeType, mimeToExtension } from './pickMimeType';
 
 export interface ExportOptions {
@@ -6,7 +6,7 @@ export interface ExportOptions {
   trim: TrimRange;
   rotation: Rotation;
   flip?: FlipState;
-  format?: ExportFormat;
+  format?: VideoExportFormat;
   onProgress?: (p: ExportProgress) => void;
   signal?: AbortSignal;
 }
@@ -44,7 +44,7 @@ function getSourceVideoFps(video: HTMLVideoElement): number {
 
 export async function exportVideo(opts: ExportOptions): Promise<ExportResult> {
   const { source, trim, rotation, flip, format = 'mp4', onProgress, signal } = opts;
-  const mimeType = pickSupportedMimeType(format);
+  const mimeType = pickSupportedMimeType(format as VideoExportFormat);
 
   const fps = getSourceVideoFps(source);
 

@@ -55,17 +55,17 @@ export function Dropzone({ onFile, disabled }: DropzoneProps) {
           dragging ? 'bg-sky-500 text-white' : 'bg-slate-800 text-slate-400'
         }`}
       >
-        {dragging ? <Film size={28} /> : <UploadCloud size={28} />}
+      {dragging ? <Film size={28} /> : <UploadCloud size={28} />}
       </div>
       <div className="space-y-1.5">
         <p className="text-base font-semibold text-slate-100 sm:text-lg">
-          {dragging ? 'Soltá tu archivo acá' : 'Arrastrá tu video'}
+          {dragging ? 'Soltá tu archivo acá' : 'Arrastrá tu video o imagen'}
         </p>
         <p className="text-sm text-slate-400">
           o <span className="font-medium text-sky-400">hacé clic para seleccionar</span> un archivo
         </p>
       </div>
-      <p className="text-xs text-slate-500">MP4, WebM, MOV — se procesa todo en tu navegador</p>
+      <p className="text-xs text-slate-500">MP4, WebM, MOV · PNG, JPG, WebP — se procesa todo en tu navegador</p>
     </div>
   );
 }

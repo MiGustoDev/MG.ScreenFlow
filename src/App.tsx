@@ -13,6 +13,7 @@ function App() {
   const editor = useVideoEditor();
   const {
     videoRef,
+    imageRef,
     status,
     error,
     objectUrl,
@@ -55,6 +56,8 @@ function App() {
     setWallLayout,
     thumbnails,
   } = editor;
+
+  const isImage = meta?.type === 'image';
 
   // Inline filename editing state
   const [isEditingName, setIsEditingName] = React.useState(false);
@@ -137,11 +140,11 @@ function App() {
                 100% en tu navegador · sin subir nada a un servidor
               </div>
               <h2 className="text-2xl font-bold tracking-tight text-white sm:text-3xl">
-                Rotá, cortá y descargá tu video
+                Rotaté, cortá y descargá tu contenido
               </h2>
               <p className="mx-auto mt-2 max-w-md text-sm text-slate-400">
-                Subí un video, corregí la orientación, recortá el tramo que quieras conservar y
-                exportalo en alta calidad.
+                Subí un video o imagen, coregí la orientación, recortá el tramo que quieras conservar y
+                exportálo en alta calidad.
               </p>
             </div>
             <Dropzone onFile={loadFile} />
@@ -170,12 +173,15 @@ function App() {
             <div className="lg:col-span-2 flex flex-col gap-5">
               <VideoStage
                 videoRef={videoRef}
+                imageRef={imageRef}
                 objectUrl={objectUrl}
                 rotation={rotation}
                 flip={flip}
                 isPlaying={isPlaying}
+                mediaType={meta?.type}
                 onTogglePlay={togglePlay}
               />
+              {!isImage && (
               <div className="rounded-2xl border border-slate-800 bg-slate-900 p-4 shadow-sm sm:p-5">
                 <Timeline
                   duration={meta.duration}
@@ -193,6 +199,7 @@ function App() {
                   thumbnails={thumbnails}
                 />
               </div>
+              )}
 
               <div className="rounded-2xl border border-slate-800 bg-slate-900 p-4 shadow-sm sm:p-5">
                 <h3 className="mb-3 text-sm font-semibold text-slate-200">Detalles</h3>
@@ -237,17 +244,19 @@ function App() {
                     </dd>
                   </div>
                   <div className="flex justify-between">
-                    <dt className="text-slate-400">Duración</dt>
-                    <dd className="font-medium text-slate-200">
-                      {formatTimePrecise(meta.duration)}
-                    </dd>
-                  </div>
-                  <div className="flex justify-between">
                     <dt className="text-slate-400">Resolución</dt>
                     <dd className="font-medium text-slate-200">
                       {meta.width}×{meta.height}
                     </dd>
                   </div>
+                  {!isImage && (
+                  <div className="flex justify-between">
+                    <dt className="text-slate-400">Duración</dt>
+                    <dd className="font-medium text-slate-200">
+                      {formatTimePrecise(meta.duration)}
+                    </dd>
+                  </div>
+                  )}
                   <div className="flex justify-between">
                     <dt className="text-slate-400">Tamaño</dt>
                     <dd className="font-medium text-slate-200">{formatBytes(meta.size)}</dd>
@@ -271,7 +280,8 @@ function App() {
                 />
               </div>
 
-              {/* Speed control */}
+              {/* Speed control - only for video */}
+              {!isImage && (
               <div className="rounded-2xl border border-slate-800 bg-slate-900 p-4 shadow-sm sm:p-5">
                 <h3 className="mb-3 text-sm font-semibold text-slate-200">Velocidad de Reproducción</h3>
                 <div className="grid grid-cols-5 gap-1.5">
@@ -290,6 +300,7 @@ function App() {
                   ))}
                 </div>
               </div>
+              )}
 
               <VideoWallPicker
                 value={wallLayout}
@@ -304,6 +315,7 @@ function App() {
                   exportUrl={exportUrl}
                   exportName={exportName}
                   error={error}
+                  mediaType={meta?.type}
                   onFormatChange={setExportFormat}
                   onExport={exportCurrent}
                   onCancel={cancelExport}

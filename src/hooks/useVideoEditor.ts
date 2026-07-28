@@ -13,12 +13,14 @@ import type {
 import { clamp } from '@/lib/format';
 import { exportVideo } from '@/lib/exportVideo';
 import { exportVideoWall } from '@/lib/exportVideoWall';
+import { exportImage, exportImageWall } from '@/lib/exportImage';
 import { generateThumbnails } from '@/lib/generateThumbnails';
 
 const MIN_TRIM_SECONDS = 0.1;
 
 export interface UseVideoEditor {
   videoRef: React.RefObject<HTMLVideoElement>;
+  imageRef: React.RefObject<HTMLImageElement>;
   status: EditorStatus;
   error: string | null;
   objectUrl: string | null;
@@ -66,6 +68,7 @@ export interface UseVideoEditor {
 
 export function useVideoEditor(): UseVideoEditor {
   const videoRef = useRef<HTMLVideoElement>(null);
+  const imageRef = useRef<HTMLImageElement>(null);
   const [status, setStatus] = useState<EditorStatus>('idle');
   const [error, setError] = useState<string | null>(null);
   const [objectUrl, setObjectUrl] = useState<string | null>(null);
@@ -122,7 +125,9 @@ export function useVideoEditor(): UseVideoEditor {
 
   const loadFile = useCallback(
     (file: File) => {
-      if (!file.type.startsWith('video/') && !file.type.startsWith('image/')) {
+      const isVideo = file.type.startsWith('video/');
+      const isImage = file.type.startsWith('image/');
+      if (!isVideo && !isImage) {
         setError('El archivo no es un video o imagen válido.');
         setStatus('error');
         return;
@@ -144,6 +149,12 @@ export function useVideoEditor(): UseVideoEditor {
       setPast([]);
       setFuture([]);
       setThumbnails([]);
+      // Default export format based on media type
+      if (isImage) {
+        setExportFormat('png');
+      } else {
+        setExportFormat('mp4');
+      }
 
       const url = URL.createObjectURL(file);
       pendingFileRef.current = { file, url };
@@ -152,16 +163,44 @@ export function useVideoEditor(): UseVideoEditor {
     [objectUrl, exportUrl, cleanupUrl],
   );
 
-  // Attach metadata listeners once the <video> element picks up the new src.
+  // Attach metadata listeners once the <video> or <img> element picks up the new src.
   useEffect(() => {
     if (!objectUrl || !pendingFileRef.current) return;
     if (pendingFileRef.current.url !== objectUrl) return;
 
     const { file } = pendingFileRef.current;
+    const isImage = file.type.startsWith('image/');
 
+    // ── Image path ─────────────────────────────────────────────────────────────
+    if (isImage) {
+      const img = new Image();
+      img.onload = () => {
+        setMeta({
+          type: 'image',
+          duration: 0,
+          width: img.naturalWidth,
+          height: img.naturalHeight,
+          name: file.name,
+          size: file.size,
+        });
+        setTrimState({ start: 0, end: 0 });
+        setStatus('ready');
+        pendingFileRef.current = null;
+      };
+      img.onerror = () => {
+        setError('No se pudo cargar la imagen.');
+        setStatus('error');
+        pendingFileRef.current = null;
+      };
+      img.src = objectUrl;
+      return;
+    }
+
+    // ── Video path ─────────────────────────────────────────────────────────────
     const checkAndSetLoaded = (video: HTMLVideoElement) => {
       const duration = Number.isFinite(video.duration) ? video.duration : 0;
       setMeta({
+        type: 'video',
         duration,
         width: video.videoWidth,
         height: video.videoHeight,
@@ -411,8 +450,7 @@ export function useVideoEditor(): UseVideoEditor {
   );
 
   const exportCurrent = useCallback(async () => {
-    const video = videoRef.current;
-    if (!video || !objectUrl || !meta) return;
+    if (!objectUrl || !meta) return;
     if (status === 'exporting') return;
 
     cleanupUrl(exportUrl);
@@ -422,39 +460,75 @@ export function useVideoEditor(): UseVideoEditor {
     setStatus('exporting');
     setExportProgress({ phase: 'preparing', fraction: 0 });
 
-    video.pause();
-    setIsPlaying(false);
-
     const controller = new AbortController();
     abortRef.current = controller;
 
+    const base = meta.name.replace(/\.[^.]+$/, '');
+
     try {
-      const base = meta.name.replace(/\.[^.]+$/, '');
       let result;
 
-      if (wallLayout) {
-        result = await exportVideoWall({
-          source: video,
-          trim,
-          rotation,
-          flip,
-          format: exportFormat,
-          layout: wallLayout,
-          signal: controller.signal,
-          onProgress: setExportProgress,
-        });
-        setExportName(`${base}_wall${wallLayout.cols}x${wallLayout.rows}.${result.extension}`);
+      // ── Image export ─────────────────────────────────────────────────────────
+      if (meta.type === 'image') {
+        const img = imageRef.current;
+        if (!img) throw new Error('No se encontró el elemento de imagen.');
+        const imgFormat = (exportFormat === 'png' || exportFormat === 'jpg') ? exportFormat : 'png';
+
+        if (wallLayout) {
+          result = await exportImageWall({
+            source: img,
+            rotation,
+            flip,
+            format: imgFormat,
+            layout: wallLayout,
+            signal: controller.signal,
+            onProgress: setExportProgress,
+          });
+          setExportName(`${base}_wall${wallLayout.cols}x${wallLayout.rows}.${result.extension}`);
+        } else {
+          result = await exportImage({
+            source: img,
+            rotation,
+            flip,
+            format: imgFormat,
+            signal: controller.signal,
+            onProgress: setExportProgress,
+          });
+          setExportName(`${base}_editado.${result.extension}`);
+        }
       } else {
-        result = await exportVideo({
-          source: video,
-          trim,
-          rotation,
-          flip,
-          format: exportFormat,
-          signal: controller.signal,
-          onProgress: setExportProgress,
-        });
-        setExportName(`${base}_editado.${result.extension}`);
+        // ── Video export ────────────────────────────────────────────────────────
+        const video = videoRef.current;
+        if (!video) throw new Error('No se encontró el elemento de video.');
+        const videoFormat = (exportFormat === 'mp4' || exportFormat === 'webm') ? exportFormat : 'mp4';
+
+        video.pause();
+        setIsPlaying(false);
+
+        if (wallLayout) {
+          result = await exportVideoWall({
+            source: video,
+            trim,
+            rotation,
+            flip,
+            format: videoFormat,
+            layout: wallLayout,
+            signal: controller.signal,
+            onProgress: setExportProgress,
+          });
+          setExportName(`${base}_wall${wallLayout.cols}x${wallLayout.rows}.${result.extension}`);
+        } else {
+          result = await exportVideo({
+            source: video,
+            trim,
+            rotation,
+            flip,
+            format: videoFormat,
+            signal: controller.signal,
+            onProgress: setExportProgress,
+          });
+          setExportName(`${base}_editado.${result.extension}`);
+        }
       }
 
       setExportUrl(result.url);
@@ -464,7 +538,7 @@ export function useVideoEditor(): UseVideoEditor {
         setStatus('ready');
         setExportProgress(null);
       } else {
-        setError((e as Error)?.message ?? 'Error al exportar el video.');
+        setError((e as Error)?.message ?? 'Error al exportar.');
         setStatus('error');
       }
     } finally {
@@ -526,6 +600,7 @@ export function useVideoEditor(): UseVideoEditor {
 
   return {
     videoRef,
+    imageRef,
     status,
     error,
     objectUrl,

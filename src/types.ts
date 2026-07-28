@@ -20,6 +20,7 @@ export interface ExportProgress {
 }
 
 export interface VideoMeta {
+  type: 'video' | 'image';
   duration: number;
   width: number;
   height: number;
@@ -32,7 +33,9 @@ export interface TrimRange {
   end: number;
 }
 
-export type ExportFormat = 'mp4' | 'webm';
+export type VideoExportFormat = 'mp4' | 'webm';
+export type ImageExportFormat = 'png' | 'jpg';
+export type ExportFormat = VideoExportFormat | ImageExportFormat;
 
 export interface VideoWallLayout {
   cols: number;

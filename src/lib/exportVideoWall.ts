@@ -1,4 +1,4 @@
-import type { ExportFormat, ExportProgress, FlipState, Rotation, TrimRange, VideoWallLayout } from '@/types';
+import type { VideoExportFormat, ExportProgress, FlipState, Rotation, TrimRange, VideoWallLayout } from '@/types';
 import { pickSupportedMimeType, mimeToExtension } from './pickMimeType';
 
 export interface ExportVideoWallOptions {
@@ -6,7 +6,7 @@ export interface ExportVideoWallOptions {
   trim: TrimRange;
   rotation: Rotation;
   flip?: FlipState;
-  format?: ExportFormat;
+  format?: VideoExportFormat;
   layout: VideoWallLayout;
   onProgress?: (p: ExportProgress) => void;
   signal?: AbortSignal;
