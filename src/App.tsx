@@ -291,7 +291,7 @@ function App() {
                           <button
                             onClick={startEditingName}
                             title="Renombrar archivo"
-                            className="shrink-0 rounded p-0.5 text-slate-500 opacity-0 transition hover:bg-slate-700 hover:text-slate-300 group-hover:opacity-100"
+                            className="shrink-0 rounded p-0.5 text-slate-400 transition hover:bg-slate-700 hover:text-slate-200"
                           >
                             <Pencil size={12} />
                           </button>
@@ -326,22 +326,70 @@ function App() {
                 </dl>
               </div>
 
-              {/* Keyboard Shortcuts Hint Card */}
-              <div className="flex items-center gap-3 rounded-xl border border-slate-800/80 bg-slate-900/50 p-3 text-xs text-slate-400">
-                <Keyboard size={18} className="shrink-0 text-sky-400" />
-                <div className="flex flex-wrap items-center gap-x-4 gap-y-1">
-                  {!isImage && (
-                    <span><kbd className="rounded bg-slate-800 px-1.5 py-0.5 font-mono text-[10px] text-slate-200">Espacio</kbd> Play/Pausa</span>
-                  )}
-                  <span><kbd className="rounded bg-slate-800 px-1.5 py-0.5 font-mono text-[10px] text-slate-200">R</kbd> Rotar 90°</span>
-                  {!isImage && (
-                    <span><kbd className="rounded bg-slate-800 px-1.5 py-0.5 font-mono text-[10px] text-slate-200">M</kbd> Mute</span>
-                  )}
-                  <span><kbd className="rounded bg-slate-800 px-1.5 py-0.5 font-mono text-[10px] text-slate-200">Ctrl+Z</kbd> Deshacer</span>
-                  {!isImage && (
-                    <span><kbd className="rounded bg-slate-800 px-1.5 py-0.5 font-mono text-[10px] text-slate-200">← / →</kbd> Seek 1s</span>
-                  )}
+              {/* Bottom Row: Keyboard Shortcuts + AI Background Removal */}
+              <div className={`grid gap-5 items-stretch ${isImage ? 'grid-cols-1 md:grid-cols-2' : 'grid-cols-1'}`}>
+                {/* Keyboard Shortcuts Hint Card */}
+                <div className="flex flex-col justify-start gap-2.5 rounded-2xl border border-slate-800 bg-slate-900 p-4 text-xs text-slate-400">
+                  <div className="flex items-center gap-2 font-semibold text-slate-300 text-xs">
+                    <Keyboard size={16} className="text-sky-400" />
+                    <span>Atajos de teclado</span>
+                  </div>
+                  <div className="flex flex-wrap items-center gap-x-3 gap-y-1.5 pt-1">
+                    {!isImage && (
+                      <span><kbd className="rounded bg-slate-800 border border-slate-700 px-1.5 py-0.5 font-mono text-[10px] text-slate-200">Espacio</kbd> Play/Pausa</span>
+                    )}
+                    <span><kbd className="rounded bg-slate-800 border border-slate-700 px-1.5 py-0.5 font-mono text-[10px] text-slate-200">R</kbd> Rotar 90°</span>
+                    {!isImage && (
+                      <span><kbd className="rounded bg-slate-800 border border-slate-700 px-1.5 py-0.5 font-mono text-[10px] text-slate-200">M</kbd> Mute</span>
+                    )}
+                    <span><kbd className="rounded bg-slate-800 border border-slate-700 px-1.5 py-0.5 font-mono text-[10px] text-slate-200">Ctrl+Z</kbd> Deshacer</span>
+                    {!isImage && (
+                      <span><kbd className="rounded bg-slate-800 border border-slate-700 px-1.5 py-0.5 font-mono text-[10px] text-slate-200">← / →</kbd> Seek 1s</span>
+                    )}
+                  </div>
                 </div>
+
+                {/* AI Background Removal - only for images */}
+                {isImage && (
+                  <div className="rounded-2xl border border-sky-900/50 bg-slate-900 p-4 shadow-sm relative overflow-hidden flex flex-col justify-between gap-3">
+                    <div>
+                      <div className="mb-1.5">
+                        <h3 className="text-sm font-semibold text-slate-200 flex items-center gap-2">
+                          <Sparkles size={16} className="text-sky-400" />
+                          Remoción de Fondo con IA
+                        </h3>
+                      </div>
+                      <p className="text-xs text-slate-400 leading-relaxed">
+                        Eliminá el fondo de tu imagen automáticamente conservando la silueta principal en formato PNG transparente.
+                      </p>
+                    </div>
+                    <button
+                      onClick={removeBackground}
+                      disabled={isRemovingBackground}
+                      className={`w-full flex items-center justify-center gap-2 rounded-xl border px-4 py-2.5 text-xs font-semibold transition-all active:scale-[0.98] ${
+                        isRemovingBackground
+                          ? 'border-sky-500/40 bg-sky-500/20 text-sky-300 cursor-not-allowed'
+                          : 'border-sky-500/40 bg-gradient-to-r from-sky-500/15 via-indigo-500/15 to-sky-500/15 text-sky-200 hover:border-sky-400 hover:bg-sky-500/25 hover:text-white shadow-sm'
+                      }`}
+                    >
+                      {isRemovingBackground ? (
+                        <>
+                          <Loader2 size={16} className="animate-spin text-sky-400" />
+                          <span>
+                            {bgRemovalProgress > 0
+                              ? `Procesando IA (${Math.round(bgRemovalProgress * 100)}%)…`
+                              : 'Analizando imagen con IA…'}
+                          </span>
+                        </>
+                      ) : (
+                        <>
+                          <Wand2 size={16} className="text-sky-400" />
+                          <span>Quitar fondo a la imagen</span>
+                        </>
+                      )}
+                    </button>
+                  </div>
+                )}
               </div>
             </div>
 
@@ -360,48 +408,6 @@ function App() {
                 />
               </div>
 
-              {/* AI Background Removal - only for images */}
-              {isImage && (
-                <div className="rounded-2xl border border-sky-900/50 bg-slate-900 p-4 shadow-sm sm:p-5 relative overflow-hidden">
-                  <div className="flex items-center justify-between mb-2">
-                    <h3 className="text-sm font-semibold text-slate-200 flex items-center gap-2">
-                      <Sparkles size={16} className="text-sky-400" />
-                      Remoción de Fondo con IA
-                    </h3>
-                    <span className="rounded-full bg-sky-500/10 px-2.5 py-0.5 text-[10px] font-semibold text-sky-400 border border-sky-500/20">
-                      100% Local
-                    </span>
-                  </div>
-                  <p className="text-xs text-slate-400 mb-3.5 leading-relaxed">
-                    Eliminá el fondo de tu imagen automáticamente conservando la silueta principal en formato PNG transparente.
-                  </p>
-                  <button
-                    onClick={removeBackground}
-                    disabled={isRemovingBackground}
-                    className={`w-full flex items-center justify-center gap-2 rounded-xl border px-4 py-2.5 text-xs font-semibold transition-all active:scale-[0.98] ${
-                      isRemovingBackground
-                        ? 'border-sky-500/40 bg-sky-500/20 text-sky-300 cursor-not-allowed'
-                        : 'border-sky-500/40 bg-gradient-to-r from-sky-500/15 via-indigo-500/15 to-sky-500/15 text-sky-200 hover:border-sky-400 hover:bg-sky-500/25 hover:text-white shadow-sm'
-                    }`}
-                  >
-                    {isRemovingBackground ? (
-                      <>
-                        <Loader2 size={16} className="animate-spin text-sky-400" />
-                        <span>
-                          {bgRemovalProgress > 0
-                            ? `Procesando IA (${Math.round(bgRemovalProgress * 100)}%)…`
-                            : 'Analizando imagen con IA…'}
-                        </span>
-                      </>
-                    ) : (
-                      <>
-                        <Wand2 size={16} className="text-sky-400" />
-                        <span>Quitar fondo a la imagen</span>
-                      </>
-                    )}
-                  </button>
-                </div>
-              )}
 
               {/* Speed control - only for video */}
               {!isImage && (
