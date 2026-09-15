@@ -112,16 +112,20 @@ export function useVideoEditor(): UseVideoEditor {
     currentRotation = rotation,
     currentFlip = flip,
     currentSpeed = playbackSpeed,
+    currentWall = wallLayout,
+    currentName = meta?.name,
   ) => {
     const entry: EditorHistoryEntry = {
       trim: { ...currentTrim },
       rotation: currentRotation,
       flip: { ...currentFlip },
       playbackSpeed: currentSpeed,
+      wallLayout: currentWall,
+      name: currentName,
     };
     setPast((prev) => [...prev, entry]);
     setFuture([]);
-  }, [trim, rotation, flip, playbackSpeed]);
+  }, [trim, rotation, flip, playbackSpeed, wallLayout, meta?.name]);
 
   const loadFile = useCallback(
     (file: File) => {
@@ -146,6 +150,7 @@ export function useVideoEditor(): UseVideoEditor {
       setPlaybackSpeedState(1);
       setVolumeState(1);
       setIsMutedState(false);
+      setWallLayout(null);
       setPast([]);
       setFuture([]);
       setThumbnails([]);
@@ -213,11 +218,6 @@ export function useVideoEditor(): UseVideoEditor {
 
       // Generar thumbnails de manera asíncrona
       generateThumbnails(objectUrl, duration, 12).then(setThumbnails);
-      
-      // Sync properties
-      video.volume = volume;
-      video.muted = isMuted;
-      video.playbackRate = playbackSpeed;
     };
 
     const video = videoRef.current;
@@ -307,6 +307,7 @@ export function useVideoEditor(): UseVideoEditor {
     setPlaybackSpeedState(1);
     setVolumeState(1);
     setIsMutedState(false);
+    setWallLayout(null);
     setPast([]);
     setFuture([]);
     setThumbnails([]);
@@ -331,6 +332,11 @@ export function useVideoEditor(): UseVideoEditor {
     pushToHistory(trim, rotation, flip, playbackSpeed);
     setFlip((f) => ({ ...f, vertical: !f.vertical }));
   }, [pushToHistory, trim, rotation, flip, playbackSpeed]);
+
+  const changeWallLayout = useCallback((layout: VideoWallLayout | null) => {
+    pushToHistory(trim, rotation, flip, playbackSpeed, wallLayout, meta?.name);
+    setWallLayout(layout);
+  }, [pushToHistory, trim, rotation, flip, playbackSpeed, wallLayout, meta?.name]);
 
   const setTrim = useCallback(
     (next: TrimRange) => {
@@ -357,12 +363,14 @@ export function useVideoEditor(): UseVideoEditor {
         rotation,
         flip: { ...flip },
         playbackSpeed,
+        wallLayout,
+        name: meta?.name,
       };
       setPast((prev) => [...prev, entry]);
       setFuture([]);
       trimBeforeDragRef.current = null;
     }
-  }, [rotation, flip, playbackSpeed]);
+  }, [rotation, flip, playbackSpeed, wallLayout, meta?.name]);
 
   const setPlaybackSpeed = useCallback((speed: number) => {
     pushToHistory(trim, rotation, flip, playbackSpeed);
@@ -387,6 +395,8 @@ export function useVideoEditor(): UseVideoEditor {
       rotation,
       flip: { ...flip },
       playbackSpeed,
+      wallLayout,
+      name: meta?.name,
     };
 
     setPast(newPast);
@@ -396,7 +406,11 @@ export function useVideoEditor(): UseVideoEditor {
     setRotation(previous.rotation);
     setFlip(previous.flip);
     setPlaybackSpeedState(previous.playbackSpeed);
-  }, [past, trim, rotation, flip, playbackSpeed]);
+    if (previous.wallLayout !== undefined) setWallLayout(previous.wallLayout);
+    if (previous.name !== undefined && meta) {
+      setMeta((prev) => (prev ? { ...prev, name: previous.name! } : prev));
+    }
+  }, [past, trim, rotation, flip, playbackSpeed, wallLayout, meta]);
 
   const redo = useCallback(() => {
     if (future.length === 0) return;
@@ -408,6 +422,8 @@ export function useVideoEditor(): UseVideoEditor {
       rotation,
       flip: { ...flip },
       playbackSpeed,
+      wallLayout,
+      name: meta?.name,
     };
 
     setPast((prev) => [...prev, currentEntry]);
@@ -417,7 +433,11 @@ export function useVideoEditor(): UseVideoEditor {
     setRotation(next.rotation);
     setFlip(next.flip);
     setPlaybackSpeedState(next.playbackSpeed);
-  }, [future, trim, rotation, flip, playbackSpeed]);
+    if (next.wallLayout !== undefined) setWallLayout(next.wallLayout);
+    if (next.name !== undefined && meta) {
+      setMeta((prev) => (prev ? { ...prev, name: next.name! } : prev));
+    }
+  }, [future, trim, rotation, flip, playbackSpeed, wallLayout, meta]);
 
   const play = useCallback(() => {
     const video = videoRef.current;
@@ -629,7 +649,7 @@ export function useVideoEditor(): UseVideoEditor {
     setTrim,
     commitTrim,
     setExportFormat,
-    setWallLayout,
+    setWallLayout: changeWallLayout,
     play,
     pause,
     togglePlay,

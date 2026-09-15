@@ -1,5 +1,5 @@
 import React from 'react';
-import { Scissors, Sparkles, X, Loader2, Undo2, Redo2, Pencil, Check } from 'lucide-react';
+import { Sparkles, X, Loader2, Undo2, Redo2, Pencil, Check, Keyboard } from 'lucide-react';
 import { useVideoEditor } from '@/hooks/useVideoEditor';
 import { Dropzone } from '@/components/Dropzone';
 import { VideoStage } from '@/components/VideoStage';
@@ -83,6 +83,58 @@ function App() {
 
   const showEditor = status === 'ready' || status === 'exporting' || status === 'exported';
 
+  // Global Keyboard Shortcuts
+  React.useEffect(() => {
+    if (!showEditor) return;
+
+    const handleKeyDown = (e: KeyboardEvent) => {
+      const target = e.target as HTMLElement;
+      if (
+        target.tagName === 'INPUT' ||
+        target.tagName === 'TEXTAREA' ||
+        target.isContentEditable
+      ) {
+        return;
+      }
+
+      if (e.code === 'Space') {
+        e.preventDefault();
+        togglePlay();
+      } else if (e.key === 'r' || e.key === 'R') {
+        if (!e.ctrlKey && !e.metaKey) {
+          e.preventDefault();
+          rotate(90);
+        }
+      } else if (e.key === 'm' || e.key === 'M') {
+        e.preventDefault();
+        toggleMute();
+      } else if (e.key === 'z' || e.key === 'Z') {
+        if (e.ctrlKey || e.metaKey) {
+          e.preventDefault();
+          if (e.shiftKey) {
+            if (canRedo) redo();
+          } else {
+            if (canUndo) undo();
+          }
+        }
+      } else if (e.key === 'y' || e.key === 'Y') {
+        if (e.ctrlKey || e.metaKey) {
+          e.preventDefault();
+          if (canRedo) redo();
+        }
+      } else if (e.key === 'ArrowLeft') {
+        e.preventDefault();
+        seek(currentTime - 1);
+      } else if (e.key === 'ArrowRight') {
+        e.preventDefault();
+        seek(currentTime + 1);
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [showEditor, togglePlay, rotate, toggleMute, canUndo, canRedo, undo, redo, seek, currentTime]);
+
   return (
     <div className="min-h-screen bg-gradient-to-b from-slate-950 via-slate-950 to-slate-900 text-slate-100">
       <header className="sticky top-0 z-20 border-b border-slate-800/70 bg-slate-950/80 backdrop-blur-md">
@@ -106,7 +158,7 @@ function App() {
                 onClick={undo}
                 disabled={!canUndo}
                 className="inline-flex items-center gap-1 rounded-lg border border-slate-800 bg-slate-900/60 p-2 text-slate-300 transition hover:bg-slate-800 disabled:opacity-30 disabled:hover:bg-transparent"
-                title="Deshacer"
+                title="Deshacer (Ctrl+Z)"
               >
                 <Undo2 size={15} />
               </button>
@@ -114,7 +166,7 @@ function App() {
                 onClick={redo}
                 disabled={!canRedo}
                 className="inline-flex items-center gap-1 rounded-lg border border-slate-800 bg-slate-900/60 p-2 text-slate-300 transition hover:bg-slate-800 disabled:opacity-30 disabled:hover:bg-transparent"
-                title="Rehacer"
+                title="Rehacer (Ctrl+Y)"
               >
                 <Redo2 size={15} />
               </button>
@@ -143,7 +195,7 @@ function App() {
                 Rotaté, cortá y descargá tu contenido
               </h2>
               <p className="mx-auto mt-2 max-w-md text-sm text-slate-400">
-                Subí un video o imagen, coregí la orientación, recortá el tramo que quieras conservar y
+                Subí un video o imagen, corregí la orientación, recortá el tramo que quieras conservar y
                 exportálo en alta calidad.
               </p>
             </div>
@@ -179,6 +231,7 @@ function App() {
                 flip={flip}
                 isPlaying={isPlaying}
                 mediaType={meta?.type}
+                wallLayout={wallLayout}
                 onTogglePlay={togglePlay}
               />
               {!isImage && (
@@ -262,6 +315,18 @@ function App() {
                     <dd className="font-medium text-slate-200">{formatBytes(meta.size)}</dd>
                   </div>
                 </dl>
+              </div>
+
+              {/* Keyboard Shortcuts Hint Card */}
+              <div className="flex items-center gap-3 rounded-xl border border-slate-800/80 bg-slate-900/50 p-3 text-xs text-slate-400">
+                <Keyboard size={18} className="shrink-0 text-sky-400" />
+                <div className="flex flex-wrap items-center gap-x-4 gap-y-1">
+                  <span><kbd className="rounded bg-slate-800 px-1.5 py-0.5 font-mono text-[10px] text-slate-200">Espacio</kbd> Play/Pausa</span>
+                  <span><kbd className="rounded bg-slate-800 px-1.5 py-0.5 font-mono text-[10px] text-slate-200">R</kbd> Rotar 90°</span>
+                  <span><kbd className="rounded bg-slate-800 px-1.5 py-0.5 font-mono text-[10px] text-slate-200">M</kbd> Mute</span>
+                  <span><kbd className="rounded bg-slate-800 px-1.5 py-0.5 font-mono text-[10px] text-slate-200">Ctrl+Z</kbd> Deshacer</span>
+                  <span><kbd className="rounded bg-slate-800 px-1.5 py-0.5 font-mono text-[10px] text-slate-200">← / →</kbd> Seek 1s</span>
+                </div>
               </div>
             </div>
 

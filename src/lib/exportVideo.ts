@@ -66,9 +66,30 @@ export async function exportVideo(opts: ExportOptions): Promise<ExportResult> {
   if (!ctx) throw new Error('No se pudo crear el contexto de canvas.');
 
   const stream = canvas.captureStream(fps);
+
+  let audioContext: AudioContext | null = null;
   const audioStreams = captureVideoStream(source);
-  for (const s of audioStreams) {
-    for (const t of s.getAudioTracks()) stream.addTrack(t);
+
+  try {
+    const AudioCtx = window.AudioContext || (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext;
+    if (AudioCtx) {
+      audioContext = new AudioCtx();
+      const audioSource = audioContext.createMediaElementSource(source);
+      const audioDest = audioContext.createMediaStreamDestination();
+      audioSource.connect(audioDest);
+      for (const track of audioDest.stream.getAudioTracks()) {
+        stream.addTrack(track);
+      }
+    } else {
+      for (const s of audioStreams) {
+        for (const t of s.getAudioTracks()) stream.addTrack(t);
+      }
+    }
+  } catch {
+    // Fallback if MediaElementSource is already connected or unsupported
+    for (const s of audioStreams) {
+      for (const t of s.getAudioTracks()) stream.addTrack(t);
+    }
   }
 
   const recorderOptions: MediaRecorderOptions = {};
@@ -108,9 +129,10 @@ export async function exportVideo(opts: ExportOptions): Promise<ExportResult> {
   const playbackRate = source.playbackRate || 1;
   const effectiveDuration = duration / playbackRate;
 
-  // Mute video element to avoid audio echo during export playback
   const originalMuted = source.muted;
-  source.muted = true;
+  if (!audioContext) {
+    source.muted = true;
+  }
 
   await seekTo(source, start);
 
@@ -207,6 +229,11 @@ export async function exportVideo(opts: ExportOptions): Promise<ExportResult> {
 
   stream.getTracks().forEach((t) => t.stop());
   audioStreams.forEach((s) => s.getTracks().forEach((t) => t.stop()));
+  try {
+    audioContext?.close();
+  } catch {
+    /* ignore */
+  }
 
   const rawMime = recorder.mimeType || mimeType;
   const cleanMime = rawMime.split(';')[0]; // e.g. "video/webm" or "video/mp4"

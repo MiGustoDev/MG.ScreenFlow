@@ -66,5 +66,7 @@ export interface EditorHistoryEntry {
   rotation: Rotation;
   flip: FlipState;
   playbackSpeed: number;
+  wallLayout?: VideoWallLayout | null;
+  name?: string;
 }
 

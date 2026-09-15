@@ -167,10 +167,28 @@ export async function exportVideoWall(opts: ExportVideoWallOptions): Promise<Exp
   const fps = getSourceVideoFps(source);
   const stream = canvas.captureStream(fps);
 
-  // Agregar audio
+  let audioContext: AudioContext | null = null;
   const audioStreams = captureVideoStream(source);
-  for (const s of audioStreams) {
-    for (const t of s.getAudioTracks()) stream.addTrack(t);
+
+  try {
+    const AudioCtx = window.AudioContext || (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext;
+    if (AudioCtx) {
+      audioContext = new AudioCtx();
+      const audioSource = audioContext.createMediaElementSource(source);
+      const audioDest = audioContext.createMediaStreamDestination();
+      audioSource.connect(audioDest);
+      for (const track of audioDest.stream.getAudioTracks()) {
+        stream.addTrack(track);
+      }
+    } else {
+      for (const s of audioStreams) {
+        for (const t of s.getAudioTracks()) stream.addTrack(t);
+      }
+    }
+  } catch {
+    for (const s of audioStreams) {
+      for (const t of s.getAudioTracks()) stream.addTrack(t);
+    }
   }
 
   const recorderOptions: MediaRecorderOptions = {};
@@ -210,7 +228,9 @@ export async function exportVideoWall(opts: ExportVideoWallOptions): Promise<Exp
   const effectiveDuration = duration / playbackRate;
 
   const originalMuted = source.muted;
-  source.muted = true;
+  if (!audioContext) {
+    source.muted = true;
+  }
   await seekTo(source, start);
 
   recorder.start(250);
@@ -284,6 +304,7 @@ export async function exportVideoWall(opts: ExportVideoWallOptions): Promise<Exp
 
   stream.getTracks().forEach((t) => t.stop());
   audioStreams.forEach((s) => s.getTracks().forEach((t) => t.stop()));
+  try { audioContext?.close(); } catch { /* ignore */ }
 
   const rawMime = recorder.mimeType || mimeType;
   const cleanMime = rawMime.split(';')[0];
