@@ -1,5 +1,5 @@
 import React from 'react';
-import { Sparkles, X, Loader2, Undo2, Redo2, Pencil, Check, Keyboard } from 'lucide-react';
+import { Sparkles, X, Loader2, Undo2, Redo2, Pencil, Check, Keyboard, Wand2 } from 'lucide-react';
 import { useVideoEditor } from '@/hooks/useVideoEditor';
 import { Dropzone } from '@/components/Dropzone';
 import { VideoStage } from '@/components/VideoStage';
@@ -55,6 +55,9 @@ function App() {
     wallLayout,
     setWallLayout,
     thumbnails,
+    isRemovingBackground,
+    bgRemovalProgress,
+    removeBackground,
   } = editor;
 
   const isImage = meta?.type === 'image';
@@ -356,6 +359,49 @@ function App() {
                   onReset={resetRotation}
                 />
               </div>
+
+              {/* AI Background Removal - only for images */}
+              {isImage && (
+                <div className="rounded-2xl border border-sky-900/50 bg-slate-900 p-4 shadow-sm sm:p-5 relative overflow-hidden">
+                  <div className="flex items-center justify-between mb-2">
+                    <h3 className="text-sm font-semibold text-slate-200 flex items-center gap-2">
+                      <Sparkles size={16} className="text-sky-400" />
+                      Remoción de Fondo con IA
+                    </h3>
+                    <span className="rounded-full bg-sky-500/10 px-2.5 py-0.5 text-[10px] font-semibold text-sky-400 border border-sky-500/20">
+                      100% Local
+                    </span>
+                  </div>
+                  <p className="text-xs text-slate-400 mb-3.5 leading-relaxed">
+                    Eliminá el fondo de tu imagen automáticamente conservando la silueta principal en formato PNG transparente.
+                  </p>
+                  <button
+                    onClick={removeBackground}
+                    disabled={isRemovingBackground}
+                    className={`w-full flex items-center justify-center gap-2 rounded-xl border px-4 py-2.5 text-xs font-semibold transition-all active:scale-[0.98] ${
+                      isRemovingBackground
+                        ? 'border-sky-500/40 bg-sky-500/20 text-sky-300 cursor-not-allowed'
+                        : 'border-sky-500/40 bg-gradient-to-r from-sky-500/15 via-indigo-500/15 to-sky-500/15 text-sky-200 hover:border-sky-400 hover:bg-sky-500/25 hover:text-white shadow-sm'
+                    }`}
+                  >
+                    {isRemovingBackground ? (
+                      <>
+                        <Loader2 size={16} className="animate-spin text-sky-400" />
+                        <span>
+                          {bgRemovalProgress > 0
+                            ? `Procesando IA (${Math.round(bgRemovalProgress * 100)}%)…`
+                            : 'Analizando imagen con IA…'}
+                        </span>
+                      </>
+                    ) : (
+                      <>
+                        <Wand2 size={16} className="text-sky-400" />
+                        <span>Quitar fondo a la imagen</span>
+                      </>
+                    )}
+                  </button>
+                </div>
+              )}
 
               {/* Speed control - only for video */}
               {!isImage && (

@@ -58,8 +58,12 @@ export async function exportImage(opts: ExportImageOptions): Promise<ExportImage
   ctx.imageSmoothingEnabled = true;
   ctx.imageSmoothingQuality = 'high';
 
-  ctx.fillStyle = '#000';
-  ctx.fillRect(0, 0, cw, ch);
+  if (format === 'jpg') {
+    ctx.fillStyle = '#000';
+    ctx.fillRect(0, 0, cw, ch);
+  } else {
+    ctx.clearRect(0, 0, cw, ch);
+  }
   ctx.save();
   ctx.translate(cw / 2, ch / 2);
   ctx.rotate((rotation * Math.PI) / 180);
@@ -130,8 +134,12 @@ export async function exportImageWall(opts: ExportImageWallOptions): Promise<Exp
   ctx.imageSmoothingEnabled = true;
   ctx.imageSmoothingQuality = 'high';
 
-  offCtx.fillStyle = '#000';
-  offCtx.fillRect(0, 0, canvasW, canvasH);
+  if (format === 'jpg') {
+    offCtx.fillStyle = '#000';
+    offCtx.fillRect(0, 0, canvasW, canvasH);
+  } else {
+    offCtx.clearRect(0, 0, canvasW, canvasH);
+  }
   offCtx.save();
   offCtx.translate(canvasW / 2, canvasH / 2);
   offCtx.rotate((rotation * Math.PI) / 180);
@@ -148,8 +156,13 @@ export async function exportImageWall(opts: ExportImageWallOptions): Promise<Exp
   const cellW = (canvasW - totalGapX) / cols;
   const cellH = (canvasH - totalGapY) / rows;
 
-  ctx.fillStyle = '#000';
-  ctx.fillRect(0, 0, canvasW, canvasH);
+  if (format === 'jpg') {
+    ctx.fillStyle = '#000';
+    ctx.fillRect(0, 0, canvasW, canvasH);
+  } else {
+    ctx.clearRect(0, 0, canvasW, canvasH);
+  }
+
 
   for (let row = 0; row < rows; row++) {
     for (let col = 0; col < cols; col++) {

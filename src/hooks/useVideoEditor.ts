@@ -15,6 +15,7 @@ import { exportVideo } from '@/lib/exportVideo';
 import { exportVideoWall } from '@/lib/exportVideoWall';
 import { exportImage, exportImageWall } from '@/lib/exportImage';
 import { generateThumbnails } from '@/lib/generateThumbnails';
+import { removeImageBackground } from '@/lib/removeBackground';
 
 const MIN_TRIM_SECONDS = 0.1;
 
@@ -64,6 +65,9 @@ export interface UseVideoEditor {
   clearExport: () => void;
   renameFile: (name: string) => void;
   thumbnails: string[];
+  isRemovingBackground: boolean;
+  bgRemovalProgress: number;
+  removeBackground: () => Promise<void>;
 }
 
 export function useVideoEditor(): UseVideoEditor {
@@ -107,6 +111,10 @@ export function useVideoEditor(): UseVideoEditor {
 
   const pendingFileRef = useRef<{ file: File; url: string } | null>(null);
 
+  // Background Removal
+  const [isRemovingBackground, setIsRemovingBackground] = useState(false);
+  const [bgRemovalProgress, setBgRemovalProgress] = useState(0);
+
   const pushToHistory = useCallback((
     currentTrim = trim,
     currentRotation = rotation,
@@ -114,6 +122,8 @@ export function useVideoEditor(): UseVideoEditor {
     currentSpeed = playbackSpeed,
     currentWall = wallLayout,
     currentName = meta?.name,
+    currentUrl = objectUrl,
+    currentMeta = meta,
   ) => {
     const entry: EditorHistoryEntry = {
       trim: { ...currentTrim },
@@ -122,10 +132,12 @@ export function useVideoEditor(): UseVideoEditor {
       playbackSpeed: currentSpeed,
       wallLayout: currentWall,
       name: currentName,
+      objectUrl: currentUrl,
+      meta: currentMeta ? { ...currentMeta } : null,
     };
     setPast((prev) => [...prev, entry]);
     setFuture([]);
-  }, [trim, rotation, flip, playbackSpeed, wallLayout, meta?.name]);
+  }, [trim, rotation, flip, playbackSpeed, wallLayout, meta, objectUrl]);
 
   const loadFile = useCallback(
     (file: File) => {
@@ -397,6 +409,8 @@ export function useVideoEditor(): UseVideoEditor {
       playbackSpeed,
       wallLayout,
       name: meta?.name,
+      objectUrl,
+      meta: meta ? { ...meta } : null,
     };
 
     setPast(newPast);
@@ -410,7 +424,13 @@ export function useVideoEditor(): UseVideoEditor {
     if (previous.name !== undefined && meta) {
       setMeta((prev) => (prev ? { ...prev, name: previous.name! } : prev));
     }
-  }, [past, trim, rotation, flip, playbackSpeed, wallLayout, meta]);
+    if (previous.objectUrl !== undefined && previous.objectUrl !== objectUrl) {
+      setObjectUrl(previous.objectUrl);
+    }
+    if (previous.meta !== undefined && previous.meta !== null) {
+      setMeta(previous.meta);
+    }
+  }, [past, trim, rotation, flip, playbackSpeed, wallLayout, meta, objectUrl]);
 
   const redo = useCallback(() => {
     if (future.length === 0) return;
@@ -424,6 +444,8 @@ export function useVideoEditor(): UseVideoEditor {
       playbackSpeed,
       wallLayout,
       name: meta?.name,
+      objectUrl,
+      meta: meta ? { ...meta } : null,
     };
 
     setPast((prev) => [...prev, currentEntry]);
@@ -437,7 +459,13 @@ export function useVideoEditor(): UseVideoEditor {
     if (next.name !== undefined && meta) {
       setMeta((prev) => (prev ? { ...prev, name: next.name! } : prev));
     }
-  }, [future, trim, rotation, flip, playbackSpeed, wallLayout, meta]);
+    if (next.objectUrl !== undefined && next.objectUrl !== objectUrl) {
+      setObjectUrl(next.objectUrl);
+    }
+    if (next.meta !== undefined && next.meta !== null) {
+      setMeta(next.meta);
+    }
+  }, [future, trim, rotation, flip, playbackSpeed, wallLayout, meta, objectUrl]);
 
   const play = useCallback(() => {
     const video = videoRef.current;
@@ -664,6 +692,47 @@ export function useVideoEditor(): UseVideoEditor {
     clearExport,
     renameFile,
     thumbnails,
+    isRemovingBackground,
+    bgRemovalProgress,
+    removeBackground: useCallback(async () => {
+      if (!objectUrl || !meta || meta.type !== 'image' || isRemovingBackground) return;
+
+      setIsRemovingBackground(true);
+      setBgRemovalProgress(0);
+      setError(null);
+
+      try {
+        const newBlob = await removeImageBackground(objectUrl, (fraction) => {
+          setBgRemovalProgress(fraction);
+        });
+
+        const newUrl = URL.createObjectURL(newBlob);
+
+        // Push current state to history before updating
+        pushToHistory(trim, rotation, flip, playbackSpeed, wallLayout, meta.name, objectUrl, meta);
+
+        const newName = meta.name.toLowerCase().endsWith('.png')
+          ? meta.name
+          : `${meta.name.replace(/\.[^.]+$/, '')}.png`;
+
+        setObjectUrl(newUrl);
+        setMeta((prev) =>
+          prev
+            ? {
+                ...prev,
+                size: newBlob.size,
+                name: newName,
+              }
+            : prev,
+        );
+      } catch (err) {
+        console.error('Error removing background:', err);
+        setError('Error al quitar el fondo de la imagen.');
+      } finally {
+        setIsRemovingBackground(false);
+        setBgRemovalProgress(0);
+      }
+    }, [objectUrl, meta, isRemovingBackground, pushToHistory, trim, rotation, flip, playbackSpeed, wallLayout]),
   };
 }
 

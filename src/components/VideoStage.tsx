@@ -41,7 +41,11 @@ export function VideoStage({
         </div>
       )}
 
-      <div className="relative flex h-full w-full items-center justify-center overflow-hidden rounded-xl bg-black">
+      <div className={`relative flex h-full w-full items-center justify-center overflow-hidden rounded-xl ${
+        mediaType === 'image'
+          ? 'bg-[linear-gradient(45deg,#1e293b_25%,transparent_25%),linear-gradient(-45deg,#1e293b_25%,transparent_25%),linear-gradient(45deg,transparent_75%,#1e293b_75%),linear-gradient(-45deg,transparent_75%,#1e293b_75%)] bg-[size:16px_16px] bg-[position:0_0,0_8px,8px_-8px,-8px_0px] bg-slate-950'
+          : 'bg-black'
+      }`}>
         {mediaType === 'image' ? (
           <img
             ref={imageRef}

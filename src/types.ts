@@ -68,5 +68,8 @@ export interface EditorHistoryEntry {
   playbackSpeed: number;
   wallLayout?: VideoWallLayout | null;
   name?: string;
+  objectUrl?: string | null;
+  meta?: VideoMeta | null;
 }
+
 
