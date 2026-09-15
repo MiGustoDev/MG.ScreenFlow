@@ -55,6 +55,9 @@ export async function exportImage(opts: ExportImageOptions): Promise<ExportImage
 
   onProgress?.({ phase: 'rendering', fraction: 0.5 });
 
+  ctx.imageSmoothingEnabled = true;
+  ctx.imageSmoothingQuality = 'high';
+
   ctx.fillStyle = '#000';
   ctx.fillRect(0, 0, cw, ch);
   ctx.save();
@@ -76,7 +79,7 @@ export async function exportImage(opts: ExportImageOptions): Promise<ExportImage
     canvas.toBlob((b) => {
       if (b) resolve(b);
       else reject(new Error('No se pudo generar la imagen.'));
-    }, mimeType, 0.95);
+    }, mimeType, 1.0);
   });
 
   const url = URL.createObjectURL(blob);
@@ -122,6 +125,11 @@ export async function exportImageWall(opts: ExportImageWallOptions): Promise<Exp
   const offCtx = offscreen.getContext('2d');
   if (!offCtx) throw new Error('No se pudo crear el contexto de canvas offscreen.');
 
+  offCtx.imageSmoothingEnabled = true;
+  offCtx.imageSmoothingQuality = 'high';
+  ctx.imageSmoothingEnabled = true;
+  ctx.imageSmoothingQuality = 'high';
+
   offCtx.fillStyle = '#000';
   offCtx.fillRect(0, 0, canvasW, canvasH);
   offCtx.save();
@@ -130,7 +138,7 @@ export async function exportImageWall(opts: ExportImageWallOptions): Promise<Exp
   if (flip) {
     offCtx.scale(flip.horizontal ? -1 : 1, flip.vertical ? -1 : 1);
   }
-  offCtx.drawImage(source, -canvasW / 2, -canvasH / 2, canvasW, canvasH);
+  offCtx.drawImage(source, -source.naturalWidth / 2, -source.naturalHeight / 2);
   offCtx.restore();
 
   // 2. Copiar cada tile al canvas final
@@ -167,7 +175,7 @@ export async function exportImageWall(opts: ExportImageWallOptions): Promise<Exp
     canvas.toBlob((b) => {
       if (b) resolve(b);
       else reject(new Error('No se pudo generar la imagen.'));
-    }, mimeType, 0.95);
+    }, mimeType, 1.0);
   });
 
   const url = URL.createObjectURL(blob);
