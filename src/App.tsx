@@ -148,7 +148,7 @@ function App() {
                 ScreenFlow
               </h1>
               <p className="hidden text-xs text-slate-400 sm:block">
-                Editor de video para pantallas de la marca
+                {isImage ? 'Editor de imagen para pantallas de la marca' : 'Editor de video para pantallas de la marca'}
               </p>
             </div>
           </div>
@@ -176,7 +176,7 @@ function App() {
                 className="inline-flex items-center gap-1.5 rounded-lg border border-slate-700 bg-slate-900 px-3 py-1.5 text-xs font-medium text-slate-300 transition hover:bg-slate-800"
               >
                 <X size={14} />
-                Nuevo video
+                {isImage ? 'Nueva imagen' : 'Nuevo video'}
               </button>
             </div>
           )}
@@ -206,7 +206,7 @@ function App() {
         {status === 'loading' && (
           <div className="flex flex-col items-center justify-center gap-3 py-24 text-slate-400">
             <Loader2 size={32} className="animate-spin text-sky-500" />
-            <p className="text-sm font-medium">Cargando video…</p>
+            <p className="text-sm font-medium">Cargando archivo…</p>
           </div>
         )}
 
@@ -297,6 +297,12 @@ function App() {
                     </dd>
                   </div>
                   <div className="flex justify-between">
+                    <dt className="text-slate-400">Tipo de archivo</dt>
+                    <dd className="font-medium text-slate-200 capitalize">
+                      {isImage ? 'Imagen' : 'Video'}
+                    </dd>
+                  </div>
+                  <div className="flex justify-between">
                     <dt className="text-slate-400">Resolución</dt>
                     <dd className="font-medium text-slate-200">
                       {meta.width}×{meta.height}
@@ -321,11 +327,17 @@ function App() {
               <div className="flex items-center gap-3 rounded-xl border border-slate-800/80 bg-slate-900/50 p-3 text-xs text-slate-400">
                 <Keyboard size={18} className="shrink-0 text-sky-400" />
                 <div className="flex flex-wrap items-center gap-x-4 gap-y-1">
-                  <span><kbd className="rounded bg-slate-800 px-1.5 py-0.5 font-mono text-[10px] text-slate-200">Espacio</kbd> Play/Pausa</span>
+                  {!isImage && (
+                    <span><kbd className="rounded bg-slate-800 px-1.5 py-0.5 font-mono text-[10px] text-slate-200">Espacio</kbd> Play/Pausa</span>
+                  )}
                   <span><kbd className="rounded bg-slate-800 px-1.5 py-0.5 font-mono text-[10px] text-slate-200">R</kbd> Rotar 90°</span>
-                  <span><kbd className="rounded bg-slate-800 px-1.5 py-0.5 font-mono text-[10px] text-slate-200">M</kbd> Mute</span>
+                  {!isImage && (
+                    <span><kbd className="rounded bg-slate-800 px-1.5 py-0.5 font-mono text-[10px] text-slate-200">M</kbd> Mute</span>
+                  )}
                   <span><kbd className="rounded bg-slate-800 px-1.5 py-0.5 font-mono text-[10px] text-slate-200">Ctrl+Z</kbd> Deshacer</span>
-                  <span><kbd className="rounded bg-slate-800 px-1.5 py-0.5 font-mono text-[10px] text-slate-200">← / →</kbd> Seek 1s</span>
+                  {!isImage && (
+                    <span><kbd className="rounded bg-slate-800 px-1.5 py-0.5 font-mono text-[10px] text-slate-200">← / →</kbd> Seek 1s</span>
+                  )}
                 </div>
               </div>
             </div>
@@ -369,6 +381,7 @@ function App() {
 
               <VideoWallPicker
                 value={wallLayout}
+                mediaType={meta?.type}
                 onChange={setWallLayout}
               />
 
@@ -393,7 +406,7 @@ function App() {
       </main>
 
       <footer className="mx-auto max-w-6xl px-4 pb-8 pt-2 text-center text-xs text-slate-600 sm:px-6">
-        ScreenFlow — el video se procesa localmente en tu navegador.
+        ScreenFlow — el contenido se procesa localmente en tu navegador.
       </footer>
     </div>
   );

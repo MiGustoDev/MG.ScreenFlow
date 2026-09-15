@@ -3,6 +3,7 @@ import type { VideoWallLayout } from '@/types';
 
 interface VideoWallPickerProps {
   value: VideoWallLayout | null;
+  mediaType?: 'video' | 'image';
   onChange: (layout: VideoWallLayout | null) => void;
 }
 
@@ -61,17 +62,20 @@ function GridPreview({
   );
 }
 
-export function VideoWallPicker({ value, onChange }: VideoWallPickerProps) {
+export function VideoWallPicker({ value, mediaType = 'video', onChange }: VideoWallPickerProps) {
   const activeKey = value ? `${value.cols}x${value.rows}` : 'normal';
+  const isImage = mediaType === 'image';
+  const term = isImage ? 'la imagen' : 'el video';
+  const TermCapitalized = isImage ? 'La imagen' : 'El video';
 
   return (
     <div className="rounded-2xl border border-slate-800 bg-slate-900 p-4 shadow-sm sm:p-5">
       <h3 className="mb-3 flex items-center gap-2 text-sm font-semibold text-slate-200">
         <LayoutGrid size={14} className="text-sky-400" />
-        Video Wall
+        {isImage ? 'Mural de Pantallas (Wall)' : 'Video Wall'}
       </h3>
       <p className="mb-3 text-xs text-slate-500 leading-relaxed">
-        Replica el clip en una cuadrícula de celdas. El video exportado contendrá el grid completo.
+        Replica {term} en una cuadrícula de celdas. {TermCapitalized} exportado contendrá el grid completo.
       </p>
       <div className="grid grid-cols-3 gap-2">
         {LAYOUTS.map(({ layout, label, cols, rows }) => {
@@ -99,7 +103,7 @@ export function VideoWallPicker({ value, onChange }: VideoWallPickerProps) {
 
       {value && (
         <p className="mt-3 text-center text-xs text-sky-400/80">
-          El video se exportará como grid <strong>{value.cols}×{value.rows}</strong>
+          {TermCapitalized} se exportará como grid <strong>{value.cols}×{value.rows}</strong>
           {' '}({value.cols * value.rows} {value.cols * value.rows === 1 ? 'celda' : 'celdas'})
         </p>
       )}
