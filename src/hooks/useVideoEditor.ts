@@ -9,6 +9,8 @@ import type {
   VideoMeta,
   EditorHistoryEntry,
   VideoWallLayout,
+  VideoQualityProfile,
+  VideoResolutionOption,
 } from '@/types';
 import { clamp } from '@/lib/format';
 import { exportVideo } from '@/lib/exportVideo';
@@ -68,6 +70,10 @@ export interface UseVideoEditor {
   isRemovingBackground: boolean;
   bgRemovalProgress: number;
   removeBackground: () => Promise<void>;
+  videoQuality: VideoQualityProfile;
+  videoResolution: VideoResolutionOption;
+  setVideoQuality: (quality: VideoQualityProfile) => void;
+  setVideoResolution: (res: VideoResolutionOption) => void;
 }
 
 export function useVideoEditor(): UseVideoEditor {
@@ -83,6 +89,8 @@ export function useVideoEditor(): UseVideoEditor {
   const [currentTime, setCurrentTime] = useState(0);
   const [isPlaying, setIsPlaying] = useState(false);
   const [exportFormat, setExportFormat] = useState<ExportFormat>('mp4');
+  const [videoQuality, setVideoQuality] = useState<VideoQualityProfile>('balanced');
+  const [videoResolution, setVideoResolution] = useState<VideoResolutionOption>('original');
   const [exportProgress, setExportProgress] = useState<ExportProgress | null>(null);
   const [exportUrl, setExportUrl] = useState<string | null>(null);
   const [exportName, setExportName] = useState<string | null>(null);
@@ -560,6 +568,8 @@ export function useVideoEditor(): UseVideoEditor {
             rotation,
             flip,
             format: videoFormat,
+            quality: videoQuality,
+            resolution: videoResolution,
             layout: wallLayout,
             signal: controller.signal,
             onProgress: setExportProgress,
@@ -572,11 +582,14 @@ export function useVideoEditor(): UseVideoEditor {
             rotation,
             flip,
             format: videoFormat,
+            quality: videoQuality,
+            resolution: videoResolution,
             signal: controller.signal,
             onProgress: setExportProgress,
           });
           setExportName(`${base}_editado.${result.extension}`);
         }
+
       }
 
       setExportUrl(result.url);
@@ -733,7 +746,12 @@ export function useVideoEditor(): UseVideoEditor {
         setBgRemovalProgress(0);
       }
     }, [objectUrl, meta, isRemovingBackground, pushToHistory, trim, rotation, flip, playbackSpeed, wallLayout]),
+    videoQuality,
+    videoResolution,
+    setVideoQuality,
+    setVideoResolution,
   };
 }
+
 
 

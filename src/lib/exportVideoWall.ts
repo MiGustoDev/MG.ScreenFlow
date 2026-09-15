@@ -1,4 +1,4 @@
-import type { VideoExportFormat, ExportProgress, FlipState, Rotation, TrimRange, VideoWallLayout } from '@/types';
+import type { VideoExportFormat, ExportProgress, FlipState, Rotation, TrimRange, VideoWallLayout, VideoQualityProfile, VideoResolutionOption } from '@/types';
 import { pickSupportedMimeType, mimeToExtension } from './pickMimeType';
 
 export interface ExportVideoWallOptions {
@@ -7,6 +7,8 @@ export interface ExportVideoWallOptions {
   rotation: Rotation;
   flip?: FlipState;
   format?: VideoExportFormat;
+  quality?: VideoQualityProfile;
+  resolution?: VideoResolutionOption;
   layout: VideoWallLayout;
   onProgress?: (p: ExportProgress) => void;
   signal?: AbortSignal;
@@ -18,6 +20,38 @@ export interface ExportResult {
   extension: string;
   mimeType: string;
 }
+
+const BITRATES: Record<VideoQualityProfile, number> = {
+  compressed: 3_000_000,
+  balanced: 6_500_000,
+  high: 14_000_000,
+};
+
+function computeTargetDimensions(
+  w: number,
+  h: number,
+  rotation: Rotation,
+  resolution: VideoResolutionOption = 'original',
+) {
+  const { width: rawW, height: rawH } = computeRotatedDimensions(w, h, rotation);
+  if (resolution === 'original') return { width: rawW, height: rawH };
+
+  let maxDim = Infinity;
+  if (resolution === '1080p') maxDim = 1080;
+  else if (resolution === '720p') maxDim = 720;
+  else if (resolution === '480p') maxDim = 480;
+
+  const minRawDim = Math.min(rawW, rawH);
+  if (minRawDim > maxDim) {
+    const scale = maxDim / minRawDim;
+    const cw = Math.round((rawW * scale) / 2) * 2;
+    const ch = Math.round((rawH * scale) / 2) * 2;
+    return { width: cw, height: ch };
+  }
+
+  return { width: rawW, height: rawH };
+}
+
 
 function getSourceVideoFps(video: HTMLVideoElement): number {
   try {
@@ -143,18 +177,19 @@ function captureVideoStream(video: HTMLVideoElement): MediaStream[] {
 }
 
 export async function exportVideoWall(opts: ExportVideoWallOptions): Promise<ExportResult> {
-  const { source, trim, rotation, flip, format = 'mp4', layout, onProgress, signal } = opts;
+  const { source, trim, rotation, flip, format = 'mp4', quality = 'balanced', resolution = 'original', layout, onProgress, signal } = opts;
   const { cols, rows } = layout;
 
   const mimeType = pickSupportedMimeType(format);
 
   onProgress?.({ phase: 'preparing', fraction: 0 });
 
-  // El canvas de salida tiene las mismas dimensiones que el video (con rotación aplicada)
-  const { width: canvasW, height: canvasH } = computeRotatedDimensions(
+  // El canvas de salida tiene las dimensiones escaladas (con rotación aplicada)
+  const { width: canvasW, height: canvasH } = computeTargetDimensions(
     source.videoWidth,
     source.videoHeight,
     rotation,
+    resolution,
   );
   if (canvasW === 0 || canvasH === 0) throw new Error('El video no tiene dimensiones válidas.');
 
@@ -195,7 +230,8 @@ export async function exportVideoWall(opts: ExportVideoWallOptions): Promise<Exp
   if (MediaRecorder.isTypeSupported(mimeType)) {
     recorderOptions.mimeType = mimeType;
   }
-  recorderOptions.videoBitsPerSecond = 10_000_000;
+  recorderOptions.videoBitsPerSecond = BITRATES[quality] ?? BITRATES.balanced;
+
 
   const recorder = new MediaRecorder(stream, recorderOptions);
   const chunks: BlobPart[] = [];

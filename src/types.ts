@@ -37,6 +37,10 @@ export type VideoExportFormat = 'mp4' | 'webm';
 export type ImageExportFormat = 'png' | 'jpg';
 export type ExportFormat = VideoExportFormat | ImageExportFormat;
 
+export type VideoQualityProfile = 'compressed' | 'balanced' | 'high';
+export type VideoResolutionOption = 'original' | '1080p' | '720p' | '480p';
+
+
 export interface VideoWallLayout {
   cols: number;
   rows: number;

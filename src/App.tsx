@@ -58,6 +58,10 @@ function App() {
     isRemovingBackground,
     bgRemovalProgress,
     removeBackground,
+    videoQuality,
+    videoResolution,
+    setVideoQuality,
+    setVideoResolution,
   } = editor;
 
   const isImage = meta?.type === 'image';
@@ -446,11 +450,16 @@ function App() {
                   exportName={exportName}
                   error={error}
                   mediaType={meta?.type}
+                  videoQuality={videoQuality}
+                  videoResolution={videoResolution}
                   onFormatChange={setExportFormat}
+                  onQualityChange={setVideoQuality}
+                  onResolutionChange={setVideoResolution}
                   onExport={exportCurrent}
                   onCancel={cancelExport}
                   onDismiss={clearExport}
                 />
+
               </div>
             </div>
           </div>
