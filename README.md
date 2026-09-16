@@ -35,15 +35,19 @@ Disfruta de una experiencia de edición fluida e interactiva a través de una in
       <strong>Carga de Archivos</strong> — selector local para cargar de manera segura y privada
     </td>
   </tr>
+  <tr>
+    <td width="50%" align="center" valign="top">
+      <img src="./screenshots/3-editor.png" alt="Espacio de Trabajo" style="border-radius: 8px; border: 1px solid #334155;" />
+      <br /><br />
+      <strong>Espacio de Trabajo</strong> — timeline de miniaturas continuo y paneles de control posicionados
+    </td>
+    <td width="50%" align="center" valign="top">
+      <img src="./screenshots/4-editor.png" alt="Opciones y Controles" style="border-radius: 8px; border: 1px solid #334155;" />
+      <br /><br />
+      <strong>Opciones y Controles</strong> — ajustes de calidad, resoluciones y modos de exportación
+    </td>
+  </tr>
 </table>
-
-<br />
-
-<p align="center">
-  <img src="./screenshots/3-editor.png" alt="Espacio de Trabajo del Editor" width="90%" style="border-radius: 8px; border: 1px solid #334155;" />
-  <br /><br />
-  <strong>Espacio de Trabajo</strong> — timeline de miniaturas continuo y paneles de control posicionados
-</p>
 
 ---
 
