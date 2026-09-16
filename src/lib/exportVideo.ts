@@ -20,11 +20,23 @@ export interface ExportResult {
   mimeType: string;
 }
 
-const BITRATES: Record<VideoQualityProfile, number> = {
-  compressed: 3_000_000,
-  balanced: 6_500_000,
-  high: 14_000_000,
-};
+export function getTargetBitrate(quality: VideoQualityProfile, cw: number, ch: number): number {
+  const pixels = cw * ch;
+  if (quality === 'compressed') {
+    if (pixels <= 921_600) return 3_000_000;       // <= 720p (3.0 Mbps)
+    if (pixels <= 2_073_600) return 4_800_000;     // <= 1080p (4.8 Mbps)
+    return 8_500_000;                              // > 1080p / 4K (8.5 Mbps)
+  }
+  if (quality === 'balanced') {
+    if (pixels <= 921_600) return 4_500_000;       // <= 720p (4.5 Mbps)
+    if (pixels <= 2_073_600) return 7_500_000;     // <= 1080p (7.5 Mbps)
+    return 14_000_000;                             // > 1080p / 4K (14 Mbps)
+  }
+  // high
+  if (pixels <= 921_600) return 8_000_000;         // <= 720p (8 Mbps)
+  if (pixels <= 2_073_600) return 14_000_000;        // <= 1080p (14 Mbps)
+  return 25_000_000;                               // > 1080p / 4K (25 Mbps)
+}
 
 function computeTargetDimensions(
   w: number,
@@ -65,7 +77,7 @@ function getSourceVideoFps(video: HTMLVideoElement): number {
       if (tracks.length > 0) {
         const frameRate = tracks[0].getSettings().frameRate;
         if (frameRate && frameRate > 0) {
-          return frameRate;
+          return Math.min(60, Math.max(15, Math.round(frameRate)));
         }
       }
     }
@@ -130,7 +142,7 @@ export async function exportVideo(opts: ExportOptions): Promise<ExportResult> {
   if (MediaRecorder.isTypeSupported(mimeType)) {
     recorderOptions.mimeType = mimeType;
   }
-  recorderOptions.videoBitsPerSecond = BITRATES[quality] ?? BITRATES.balanced;
+  recorderOptions.videoBitsPerSecond = getTargetBitrate(quality, cw, ch);
 
   const recorder = new MediaRecorder(stream, recorderOptions);
 
@@ -194,10 +206,20 @@ export async function exportVideo(opts: ExportOptions): Promise<ExportResult> {
 
   await new Promise<void>((resolve) => {
     let resolved = false;
+    let animHandle: number | null = null;
+    const hasRVFC = typeof (source as unknown as Record<string, unknown>).requestVideoFrameCallback === 'function';
+
     const finish = () => {
       if (resolved) return;
       resolved = true;
       clearInterval(fallbackTimer);
+      if (animHandle !== null) {
+        if (hasRVFC) {
+          (source as HTMLVideoElement & { cancelVideoFrameCallback: (id: number) => void }).cancelVideoFrameCallback(animHandle);
+        } else {
+          cancelAnimationFrame(animHandle);
+        }
+      }
       onProgress?.({ phase: 'rendering', fraction: 1 });
       resolve();
     };
@@ -207,7 +229,7 @@ export async function exportVideo(opts: ExportOptions): Promise<ExportResult> {
       if (source.currentTime >= end - 0.05 || elapsed >= effectiveDuration + 0.3 || source.ended || aborted) {
         finish();
       }
-    }, 200);
+    }, 100);
 
     const renderFrame = () => {
       if (aborted || resolved) return;
@@ -225,10 +247,18 @@ export async function exportVideo(opts: ExportOptions): Promise<ExportResult> {
         return;
       }
 
-      setTimeout(renderFrame, 1000 / fps);
+      if (hasRVFC) {
+        animHandle = (source as HTMLVideoElement & { requestVideoFrameCallback: (cb: () => void) => number }).requestVideoFrameCallback(renderFrame);
+      } else {
+        animHandle = requestAnimationFrame(renderFrame);
+      }
     };
 
-    setTimeout(renderFrame, 1000 / fps);
+    if (hasRVFC) {
+      animHandle = (source as HTMLVideoElement & { requestVideoFrameCallback: (cb: () => void) => number }).requestVideoFrameCallback(renderFrame);
+    } else {
+      animHandle = requestAnimationFrame(renderFrame);
+    }
   });
 
 
@@ -321,7 +351,9 @@ function drawFrame(
   if (flip) {
     ctx.scale(flip.horizontal ? -1 : 1, flip.vertical ? -1 : 1);
   }
-  ctx.drawImage(video, -video.videoWidth / 2, -video.videoHeight / 2);
+  const targetW = rotation === 90 || rotation === 270 ? ch : cw;
+  const targetH = rotation === 90 || rotation === 270 ? cw : ch;
+  ctx.drawImage(video, -targetW / 2, -targetH / 2, targetW, targetH);
   ctx.restore();
 }
 

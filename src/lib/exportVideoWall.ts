@@ -1,5 +1,6 @@
 import type { VideoExportFormat, ExportProgress, FlipState, Rotation, TrimRange, VideoWallLayout, VideoQualityProfile, VideoResolutionOption } from '@/types';
 import { pickSupportedMimeType, mimeToExtension } from './pickMimeType';
+import { getTargetBitrate } from './exportVideo';
 
 export interface ExportVideoWallOptions {
   source: HTMLVideoElement;
@@ -20,12 +21,6 @@ export interface ExportResult {
   extension: string;
   mimeType: string;
 }
-
-const BITRATES: Record<VideoQualityProfile, number> = {
-  compressed: 3_000_000,
-  balanced: 6_500_000,
-  high: 14_000_000,
-};
 
 function computeTargetDimensions(
   w: number,
@@ -116,8 +111,10 @@ function drawWallFrame(
   if (flip) {
     offCtx.scale(flip.horizontal ? -1 : 1, flip.vertical ? -1 : 1);
   }
+  const targetW = rotation === 90 || rotation === 270 ? canvasH : canvasW;
+  const targetH = rotation === 90 || rotation === 270 ? canvasW : canvasH;
   // Dibujar el video escalado al tamaño total del canvas
-  offCtx.drawImage(video, -canvasW / 2, -canvasH / 2, canvasW, canvasH);
+  offCtx.drawImage(video, -targetW / 2, -targetH / 2, targetW, targetH);
   offCtx.restore();
 
   // ── 2. Copiar cada tile al canvas final ────────────────────────────────────
@@ -230,7 +227,7 @@ export async function exportVideoWall(opts: ExportVideoWallOptions): Promise<Exp
   if (MediaRecorder.isTypeSupported(mimeType)) {
     recorderOptions.mimeType = mimeType;
   }
-  recorderOptions.videoBitsPerSecond = BITRATES[quality] ?? BITRATES.balanced;
+  recorderOptions.videoBitsPerSecond = getTargetBitrate(quality, canvasW, canvasH);
 
 
   const recorder = new MediaRecorder(stream, recorderOptions);
@@ -284,10 +281,20 @@ export async function exportVideoWall(opts: ExportVideoWallOptions): Promise<Exp
 
   await new Promise<void>((resolve) => {
     let resolved = false;
+    let animHandle: number | null = null;
+    const hasRVFC = typeof (source as unknown as Record<string, unknown>).requestVideoFrameCallback === 'function';
+
     const finish = () => {
       if (resolved) return;
       resolved = true;
       clearInterval(fallbackTimer);
+      if (animHandle !== null) {
+        if (hasRVFC) {
+          (source as HTMLVideoElement & { cancelVideoFrameCallback: (id: number) => void }).cancelVideoFrameCallback(animHandle);
+        } else {
+          cancelAnimationFrame(animHandle);
+        }
+      }
       onProgress?.({ phase: 'rendering', fraction: 1 });
       resolve();
     };
@@ -297,7 +304,7 @@ export async function exportVideoWall(opts: ExportVideoWallOptions): Promise<Exp
       if (source.currentTime >= end - 0.05 || elapsed >= effectiveDuration + 0.3 || source.ended || aborted) {
         finish();
       }
-    }, 200);
+    }, 100);
 
     const renderFrame = () => {
       if (aborted || resolved) return;
@@ -313,10 +320,18 @@ export async function exportVideoWall(opts: ExportVideoWallOptions): Promise<Exp
         return;
       }
 
-      setTimeout(renderFrame, 1000 / fps);
+      if (hasRVFC) {
+        animHandle = (source as HTMLVideoElement & { requestVideoFrameCallback: (cb: () => void) => number }).requestVideoFrameCallback(renderFrame);
+      } else {
+        animHandle = requestAnimationFrame(renderFrame);
+      }
     };
 
-    setTimeout(renderFrame, 1000 / fps);
+    if (hasRVFC) {
+      animHandle = (source as HTMLVideoElement & { requestVideoFrameCallback: (cb: () => void) => number }).requestVideoFrameCallback(renderFrame);
+    } else {
+      animHandle = requestAnimationFrame(renderFrame);
+    }
   });
 
   signal?.removeEventListener('abort', onAbort);
